@@ -1,0 +1,21 @@
+.App {
+  /*text-align: center;*/
+}
+
+.airglow-canvas-container {
+  position: relative;
+  border: solid 2px black;
+  width: 100%;
+  padding-top: 100%;
+}
+
+.airglow-canvas {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 100%;
+}
+
+.airglow-upload {
+  text-align: center;
+}
