@@ -285,11 +285,6 @@ class App extends React.Component<{}, IAppState> {
               </div>
             </div>
             <div className="form-group">
-              <label htmlFor="forAlpha">Alpha: { formData.alpha / 100 }</label>
-              <input type="range" className="custom-range" id="forAlpha" min={ 0 } max={ 100 }
-                     value={ formData.alpha } onChange={ this.onChangeFormData('alpha') }/>
-            </div>
-            <div className="form-group">
               <div className="input-group">
                 <div className="input-group-prepend">
                   <label className="input-group-text" htmlFor="formSecretKey">Secret Key</label>
@@ -300,6 +295,11 @@ class App extends React.Component<{}, IAppState> {
               <small className="form-text text-muted">
                 A secret key used to encrypt the data.
               </small>
+            </div>
+            <div className="form-group">
+              <label htmlFor="forAlpha">Alpha: { formData.alpha / 100 }</label>
+              <input type="range" className="custom-range" id="forAlpha" min={ 0 } max={ 100 }
+                     value={ formData.alpha } onChange={ this.onChangeFormData('alpha') }/>
             </div>
             <div className="airglow-buttons form-group">
               <button className="airglow-button btn btn-primary"

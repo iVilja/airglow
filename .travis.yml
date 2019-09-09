@@ -1,0 +1,13 @@
+language: node_js
+node_js:
+  - 12
+deploy:
+  provider: pages
+  skip_cleanup: true
+  github_token: $GITHUB_TOKEN
+  keep_history: false
+  local_dir: ./build
+  fqdn: airglow.moon.moe
+  email: bot@moon.moe
+  on:
+    branch: master
