@@ -106,8 +106,7 @@ export async function decode(
   original: ImageData, encoded: ImageData,
   secretKey: string, alpha: number,
   logger: Logger
-):
-  Promise<ImageData> {
+): Promise<ImageData> {
   await logger(0, 'Initializing')
   secretKey = secretKey.trim()
   if (secretKey === ''

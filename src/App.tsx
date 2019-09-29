@@ -138,7 +138,8 @@ class App extends React.Component<{}, IAppState> {
   }
 
   public onDownload(type: ImageType) {
-    return () => {
+    return (e: React.MouseEvent<HTMLButtonElement>) => {
+      e.preventDefault()
       const image = this.state.images[type]
       if (image === null) {
         return
@@ -298,7 +299,7 @@ class App extends React.Component<{}, IAppState> {
             </div>
             <div className="form-group">
               <label htmlFor="forAlpha">Alpha: { formData.alpha / 100 }</label>
-              <input type="range" className="custom-range" id="forAlpha" min={ 0 } max={ 100 }
+              <input type="range" className="custom-range" id="forAlpha" min={ 1 } max={ 100 }
                      value={ formData.alpha } onChange={ this.onChangeFormData('alpha') }/>
             </div>
             <div className="airglow-buttons form-group">
