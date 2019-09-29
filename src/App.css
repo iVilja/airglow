@@ -1,5 +1,16 @@
 .App {
-  /*text-align: center;*/
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.airglow-form > h1 {
+  font-size: 3rem;
+  text-align: center;
+}
+
+.airglow-progress {
+  margin-bottom: 0.6rem;
 }
 
 .airglow-canvas-container {
@@ -16,6 +27,25 @@
   width: 100%;
 }
 
-.airglow-upload {
-  text-align: center;
+.airglow-file {
+  margin-top: 1rem;
+}
+
+.airglow-buttons {
+  display: flex;
+}
+
+.airglow-button {
+  display: block;
+  flex-grow: 1;
+  margin-left: 0.5rem;
+  margin-right: 0.5rem;
+}
+
+.airglow-button:nth-child(1) {
+  margin-left: 0;
+}
+
+.airglow-button:nth-last-child(1) {
+  margin-right: 0;
 }
