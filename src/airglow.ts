@@ -1,8 +1,7 @@
-import { ComplexArray } from 'jsfft'
 import { fft2Image, ifft2Image } from './fft'
 
 import { RNG } from './Random'
-import { Logger } from './utils'
+import { Logger, RGBA } from './utils'
 
 export function getMaxWatermarks(original: HTMLImageElement | null, secret: HTMLImageElement | null): number {
   if (original === null || secret === null) {
@@ -54,7 +53,7 @@ function makeWatermark(original: ImageData, secret: ImageData, rng: RNG, nWaterm
   canvas.width = width
   canvas.height = height
   const ctx = canvas.getContext('2d')!
-  putWatermarks(canvas, ctx, original, secret, nWatermarks)
+    putWatermarks(canvas, ctx, original, secret, nWatermarks)
   const data = ctx.getImageData(0, 0, width, height)
   const shuffledData = shuffleWatermark(data, rng)
   return shuffledData
@@ -78,11 +77,13 @@ export async function encode(
   await logger(40, 'Calculating the frequency domain of watermarks')
   const fftWatermark = fft2Image(watermark)
   await logger(60, 'Calculating the frequency domain of encoded image')
-  const fftEncoded = new ComplexArray(fftOriginal.length, Float32Array)
-  fftEncoded.map((value, i) => {
-    value.real = fftOriginal.real[i] + fftWatermark.real[i] * alpha
-    value.imag = fftOriginal.imag[i]
-  })
+  const mapFunction = (i: number) => (x: number, j: number) => x + fftWatermark[i][j] * alpha
+  const fftEncoded: RGBA = [
+    fftOriginal[0].map(mapFunction(0)),
+    fftOriginal[1].map(mapFunction(1)),
+    fftOriginal[2].map(mapFunction(2)),
+    fftOriginal[3]
+  ]
   await logger(80, 'Calculating the resulting image')
   const encoded = ifft2Image(fftEncoded, original.width, original.height)
   await logger(100, 'Finished!', 'success')
@@ -118,15 +119,13 @@ export async function decode(
   await logger(20, 'Calculating the frequency domain of encoded image')
   const fftEncoded = fft2Image(encoded)
   await logger(40, 'Calculating the frequency domain of watermarks')
-  const fftWatermark = new ComplexArray(fftOriginal.length, Float32Array)
-  fftWatermark.map((value, i) => {
-    if (i % 4 === 3) {
-      value.real = fftEncoded.real[i]
-      return
-    }
-    value.real = (fftEncoded.real[i] - fftOriginal.real[i]) / alpha
-    value.imag = (fftEncoded.imag[i] - fftOriginal.imag[i]) / alpha
-  })
+  const mapFunction = (i: number) => (x: number, j: number) => (fftEncoded[i][j] - x) / alpha
+  const fftWatermark: RGBA = [
+    fftOriginal[0].map(mapFunction(0)),
+    fftOriginal[1].map(mapFunction(1)),
+    fftOriginal[2].map(mapFunction(2)),
+    fftOriginal[3]
+  ]
   await logger(60, 'Calculating the watermarks image')
   const watermark = ifft2Image(fftWatermark, original.width, original.height)
   await logger(80, 'Calculating the resulting image')

@@ -217,7 +217,6 @@ class App extends React.Component<{}, IAppState> {
       })
     }
     this.isWorking = false
-    this.isWorking = false
   }
 
   public render() {

@@ -1,11 +1,14 @@
-import { ComplexArray } from 'jsfft'
+import { irfft2d, rfft2d } from 'kissfft-wasm'
 
-function splitRGBA(data: Uint8ClampedArray): [Uint8ClampedArray, Uint8ClampedArray, Uint8ClampedArray, Uint8ClampedArray] {
+import { RGBA } from './utils'
+
+
+function splitRGBA(data: Uint8ClampedArray): RGBA {
   const n = data.length / 4
-  const r = new Uint8ClampedArray(n)
-  const g = new Uint8ClampedArray(n)
-  const b = new Uint8ClampedArray(n)
-  const a = new Uint8ClampedArray(n)
+  const r = new Float32Array(n)
+  const g = new Float32Array(n)
+  const b = new Float32Array(n)
+  const a = new Float32Array(n)
 
   for (let i = 0; i < n; i++) {
     r[i] = data[4 * i]
@@ -17,113 +20,37 @@ function splitRGBA(data: Uint8ClampedArray): [Uint8ClampedArray, Uint8ClampedArr
   return [r, g, b, a]
 }
 
-function mergeRGBA(r: ComplexArray, g: ComplexArray, b: ComplexArray, a: Uint8ClampedArray) {
+function mergeRGBA([r, g, b, a]: RGBA): Uint8ClampedArray {
   const n = r.length
-  const output = new ComplexArray(n * 4, Float32Array)
+  const output = new Uint8ClampedArray(n * 4)
 
   for (let i = 0; i < n; i++) {
-    output.real[4 * i] = r.real[i]
-    output.imag[4 * i] = r.imag[i]
-    output.real[4 * i + 1] = g.real[i]
-    output.imag[4 * i + 1] = g.imag[i]
-    output.real[4 * i + 2] = b.real[i]
-    output.imag[4 * i + 2] = b.imag[i]
-    output.real[4 * i + 3] = a[i]
-    output.imag[4 * i + 3] = 0
+    output[4 * i] = r[i]
+    output[4 * i + 1] = g[i]
+    output[4 * i + 2] = b[i]
+    output[4 * i + 3] = a[i]
   }
 
   return output
 }
 
-function fft2(input: ComplexArray, nx: number, ny: number): ComplexArray {
-  const output = new ComplexArray(input.length, Float32Array)
-  const row = new ComplexArray(nx, Float32Array)
-  for (let j = 0; j < ny; j++) {
-    row.map((v, i) => {
-      v.real = input.real[i + j * nx]
-      v.imag = input.imag[i + j * nx]
-    })
-    row.FFT().forEach((v, i) => {
-      output.real[i + j * nx] = v.real
-      output.imag[i + j * nx] = v.imag
-    })
-  }
-  const col = new ComplexArray(ny, Float32Array)
-  for (let i = 0; i < nx; i++) {
-    col.map((v, j) => {
-      v.real = output.real[i + j * nx]
-      v.imag = output.imag[i + j * nx]
-    })
-    col.FFT().forEach((v, j) => {
-      output.real[i + j * nx] = v.real
-      output.imag[i + j * nx] = v.imag
-    })
-  }
-  return output
-}
-
-export function fft2Image(image: ImageData): ComplexArray {
-  const rgba = splitRGBA(image.data)
+export function fft2Image(image: ImageData): RGBA {
+  const [r, g, b, a] = splitRGBA(image.data)
   const nx = image.width
   const ny = image.height
 
-  return mergeRGBA(
-    fft2(new ComplexArray(rgba[0], Float32Array), nx, ny),
-    fft2(new ComplexArray(rgba[1], Float32Array), nx, ny),
-    fft2(new ComplexArray(rgba[2], Float32Array), nx, ny),
-    rgba[3]
-  )
+  return [
+    rfft2d(r, nx, ny),
+    rfft2d(g, nx, ny),
+    rfft2d(b, nx, ny),
+    a
+  ]
 }
 
-function ifft2(input: ComplexArray, nx: number, ny: number): ComplexArray {
-  const output = new ComplexArray(input.length, Float32Array)
-  const col = new ComplexArray(ny, Float32Array)
-  for (let i = nx - 1; i >= 0; i--) {
-    col.map((v, j) => {
-      v.real = input.real[i + j * nx]
-      v.imag = input.imag[i + j * nx]
-    })
-    col.InvFFT().forEach((v, j) => {
-      output.real[i + j * nx] = v.real
-      output.imag[i + j * nx] = v.imag
-    })
-  }
-  const row = new ComplexArray(nx, Float32Array)
-  for (let j = ny - 1; j >= 0; j--) {
-    row.map((v, i) => {
-      v.real = output.real[i + j * nx]
-      v.imag = output.imag[i + j * nx]
-    })
-    row.InvFFT().forEach((v, i) => {
-      output.real[i + j * nx] = v.real
-      output.imag[i + j * nx] = v.imag
-    })
-  }
-  return output
-}
-
-export function ifft2Image(data: ComplexArray, width: number, height: number): ImageData {
-  const n = data.length / 4
-  const rc = new ComplexArray(n, Float32Array)
-  const gc = new ComplexArray(n, Float32Array)
-  const bc = new ComplexArray(n, Float32Array)
-  for (let i = 0; i < n; ++i) {
-    rc.real[i] = data.real[4 * i]
-    rc.imag[i] = data.imag[4 * i]
-    gc.real[i] = data.real[4 * i + 1]
-    gc.imag[i] = data.imag[4 * i + 1]
-    bc.real[i] = data.real[4 * i + 2]
-    bc.imag[i] = data.imag[4 * i + 2]
-  }
-  const r = ifft2(rc, width, height)
-  const g = ifft2(gc, width, height)
-  const b = ifft2(bc, width, height)
-  const result = new Uint8ClampedArray(data.length)
-  for (let i = 0; i < n; ++i) {
-    result[4 * i] = r.real[i]
-    result[4 * i + 1] = g.real[i]
-    result[4 * i + 2] = b.real[i]
-    result[4 * i + 3] = data.real[4 * i + 3]
-  }
+export function ifft2Image([rf, gf, bf, a]: RGBA, width: number, height: number): ImageData {
+  const r = irfft2d(rf, width, height)
+  const g = irfft2d(gf, width, height)
+  const b = irfft2d(bf, width, height)
+  const result = mergeRGBA([r, g, b, a])
   return new ImageData(result, width, height)
 }
