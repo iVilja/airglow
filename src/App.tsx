@@ -161,9 +161,13 @@ class App extends React.Component<{}, IAppState> {
     this.isWorking = true
     const {secretKey, alpha, nWatermarks} = this.state.formData
     const data: any = {}
-    for (const type of ['original', 'secret']) {
+    for (const typeName of ['original', 'secret']) {
+      const type = typeName as ImageType
       const ctx = this.canvases[type].current!.getContext('2d')!
       const img = this.state.images[type]
+      if (img === null) {
+        return
+      }
       data[type] = ctx.getImageData(0, 0, img.width, img.height)
     }
     const canvas = this.canvases.encoded.current!
@@ -194,9 +198,13 @@ class App extends React.Component<{}, IAppState> {
     this.isWorking = true
     const {alpha, secretKey} = this.state.formData
     const data: any = {}
-    for (const type of ['original', 'encoded']) {
+    for (const typeName of ['original', 'encoded']) {
+      const type = typeName as ImageType
       const ctx = this.canvases[type].current!.getContext('2d')!
       const img = this.state.images[type]
+      if (img === null) {
+        return
+      }
       data[type] = ctx.getImageData(0, 0, img.width, img.height)
     }
     const canvas = this.canvases.secret.current!

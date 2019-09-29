@@ -45,7 +45,7 @@ export class RNG {
     return (z ^ (z >>> 16)) % UINT32_MAX
   }
 
-  private s: IRandomState
+  private s: IRandomState = {a: 0, b: 0, c: 0, d: 0}
 
   constructor(seed?: RandomSeed) {
     this.setState(seed)
