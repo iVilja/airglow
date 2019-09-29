@@ -1,4 +1,4 @@
-import { irfft2d, rfft2d } from 'kissfft-wasm'
+import { irfft2d, rfft2d } from '@ryukina/kissfft-wasm'
 
 import { RGBA } from './utils'
 
