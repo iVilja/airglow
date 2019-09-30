@@ -1,8 +1,13 @@
+/*
+ * xoshiro128** random number generator.
+ * http://prng.di.unimi.it
+ */
+
 /* tslint:disable:no-bitwise */
 
 import { swap } from './utils'
 
-const UINT32_MAX = 4294967295
+const UINT32_MAX = 4294967296
 
 export interface IRandomState {
   a: number
@@ -81,13 +86,13 @@ export class RNG {
     const s = this.s
     const t = s.b << 9
     let r = s.a * 5
-    r = (r << 7 | r >>> 25) * 9
+    r = ((r << 7) | (r >>> 25)) * 9
     s.c ^= s.a
     s.d ^= s.b
     s.b ^= s.c
     s.a ^= s.d
     s.c ^= t
-    s.d = s.d << 11 | s.d >>> 21
-    return (r >>> 0) / 4294967296
+    s.d = (s.d << 11) | (s.d >>> 21)
+    return (r >>> 0) / UINT32_MAX
   }
 }
