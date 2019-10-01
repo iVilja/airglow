@@ -7,6 +7,8 @@ import './App.css'
 import { decode, encode, getMaxWatermarks } from './airglow'
 import { AlertType } from './utils'
 
+import Footer from './Footer'
+
 interface IAppFormData {
   secretKey: string
   alpha: number
@@ -234,7 +236,7 @@ class App extends React.Component<{}, IAppState> {
     const maxWatermarks = getMaxWatermarks(images.original, images.secret)
     return (<div className="App">
       <form className="airglow-form container-fluid">
-        <h1>Airglow</h1>
+        <h1>Airglow ({ `v${process.env.REACT_APP_VERSION!}` })</h1>
         <div className={ 'alert alert-dismissible fade show' + (alertType !== null ? ` alert-${ alertType }` : '') }
              role="alert" style={ {display: alertType === null ? 'none' : 'block'} }>
           { status }
@@ -248,7 +250,7 @@ class App extends React.Component<{}, IAppState> {
                style={ {width: `${ progress }%`} }/>
         </div>
         <div className="row">
-          <div className="col col-md-4 container">
+          <div className="col-12 col-lg-4 container">
             <div className="form-group">
               <div className="airglow-canvas-container">
                 <canvas className="airglow-canvas" width={ 10 } height={ 10 } ref={ this.canvases.secret }/>
@@ -274,7 +276,7 @@ class App extends React.Component<{}, IAppState> {
                      value={ formData.nWatermarks } onChange={ this.onChangeFormData('nWatermarks') }/>
             </div>
           </div>
-          <div className="col col-md-4 container">
+          <div className="col-12 col-lg-4 container">
             <div className="form-group">
               <div className="airglow-canvas-container">
                 <canvas className="airglow-canvas" width={ 10 } height={ 10 } ref={ this.canvases.original }/>
@@ -320,7 +322,7 @@ class App extends React.Component<{}, IAppState> {
               </button>
             </div>
           </div>
-          <div className="col col-md-4 container">
+          <div className="col-12 col-lg-4 container">
             <div className="form-group">
               <div className="airglow-canvas-container">
                 <canvas className="airglow-canvas" width={ 10 } height={ 10 } ref={ this.canvases.encoded }/>
@@ -347,6 +349,7 @@ class App extends React.Component<{}, IAppState> {
           </div>
         </div>
       </form>
+      <Footer/>
     </div>)
   }
 

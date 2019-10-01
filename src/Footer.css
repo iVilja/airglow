@@ -1,0 +1,17 @@
+.footer {
+  background: #f5f5f5;
+}
+
+.footer-container {
+  text-align: center;
+}
+
+.footer-block {
+  display: inline-block;
+}
+
+.footer-block > select {
+  padding-left: 0.8rem;
+  width: auto;
+  display: inline-block;
+}

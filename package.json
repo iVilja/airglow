@@ -1,7 +1,6 @@
 {
   "name": "airglow",
   "version": "0.1.0",
-  "private": true,
   "dependencies": {
     "@ryukina/kissfft-wasm": "^1.0.0",
     "bootstrap": "^4.3.1",
@@ -10,8 +9,10 @@
     "react-scripts": "^3.1.2"
   },
   "scripts": {
-    "start": "react-scripts start",
-    "build": "react-scripts build && cp ./node_modules/@ryukina/kissfft-wasm/lib/kissfft.wasm ./build/static/js",
+    "start": "./scripts/start.sh",
+    "build": "./scripts/build.sh",
+    "ci-deploy": "./scripts/ci-deploy.sh",
+    "ci-tagged-deploy": "./scripts/ci-deploy.sh --tagged",
     "test": "react-scripts test --env=jsdom",
     "lint": "tslint --project .",
     "lint-fix": "tslint --project . --fix"
@@ -35,5 +36,8 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
-  }
+  },
+  "author": "Vilja Ryukina <i@vilja.me> (https://vilja.me)",
+  "license" : "MIT",
+  "repository": "github:ryukina/airglow"
 }

@@ -8,12 +8,12 @@ before_install:
 script:
   - yarn run build
 deploy:
-  provider: pages
-  skip_cleanup: true
-  github_token: $GITHUB_TOKEN
-  keep_history: false
-  local_dir: ./build
-  fqdn: airglow.moon.moe
-  email: bot@moon.moe
-  on:
-    branch: master
+  - provider: script
+    script: npm run ci-deploy
+    on:
+      branch: master
+  - provider: script
+    script: npm run ci-tagged-deploy
+    on:
+      branch: master
+      tags: true
