@@ -11,6 +11,12 @@ error() {
 
 [ -d "./build" ] || error "./build folder not found."
 
+if [[ "$1" == "--tagged" ]]
+then
+    TAGS=`git tag`
+    STABLE_VERSION=`git describe --tags --abbrev=0 2>/dev/null` || echo "No stable version found."
+fi
+
 VERSION=$npm_package_version
 echo "Current version: $VERSION"
 
@@ -25,8 +31,7 @@ then
     cp ../build "./v$VERSION" -r
     ln -s "./v$VERSION" "./v$SUBVERSION"
     echo "latest" > ./VERSIONS
-    git tag >> ./VERSIONS
-    STABLE_VERSION=`git describe --tags --abbrev=0 2>/dev/null` || echo "No stable version found."
+    echo $TAGS >> ./VERSIONS
     if [[ -n $STABLE_VERSION ]]
     then
         [ -e "./stable" ] && rm "./stable"
