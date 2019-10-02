@@ -5,18 +5,13 @@ notifications:
   email: false
 
 before_install:
-  - openssl aes-256-cbc -K $encrypted_ba2df4291512_key -iv $encrypted_ba2df4291512_iv
-    -in ./secure/bot.gpg.enc -out ./secure/bot.gpg -d
   - echo "//npm.pkg.github.com/:_authToken=\${GITHUB_REGISTRY_TOKEN}" > ~/.npmrc
 
 script:
   - npm run build
 
 before_deploy:
-  - gpg --import ./secure/bot.gpg
-  - git config --global user.email "bot@moon.moe"
-  - git config --global user.name "Bot Commoon"
-  - git config --global commit.gpgsign true
+  - ./scripts/ci-prepare.sh
 
 deploy:
   - provider: script

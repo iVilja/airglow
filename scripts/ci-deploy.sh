@@ -26,15 +26,15 @@ git clone --single-branch --branch=gh-pages --depth=1 https://github.com/ryukina
 if [[ "$1" == "--tagged" ]]
 then
     SUBVERSION=`echo $VERSION | sed -r 's/\.[[:digit:]]+$//'`
-    [ -e "./v$VERSION" ] && rm -rf "./v$VERSION"
-    [ -e "./v$SUBVERSION" ] && rm -rf "./v$SUBVERSION"
+    [ -d "./v$VERSION" ] && rm -rf "./v$VERSION"
+    [ -h "./v$SUBVERSION" ] && rm "./v$SUBVERSION"
     cp ../build "./v$VERSION" -r
     ln -s "./v$VERSION" "./v$SUBVERSION"
     echo "latest" > ./VERSIONS
     echo $TAGS >> ./VERSIONS
     if [[ -n $STABLE_VERSION ]]
     then
-        [ -e "./stable" ] && rm "./stable"
+        [ -h "./stable" ] && rm "./stable"
         ln -s "./$STABLE_VERSION" "./stable"
     fi
     git add .
