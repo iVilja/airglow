@@ -5,7 +5,7 @@ import * as React from 'react'
 import './App.css'
 
 import { decode, encode, getMaxWatermarks } from './airglow'
-import { AlertType } from './utils'
+import { getCurrentVersion, AlertType } from './utils'
 
 import Footer from './Footer'
 
@@ -236,7 +236,7 @@ class App extends React.Component<{}, IAppState> {
     const maxWatermarks = getMaxWatermarks(images.original, images.secret)
     return (<div className="App">
       <form className="airglow-form container-fluid">
-        <h1>Airglow ({ `v${process.env.REACT_APP_VERSION!}` })</h1>
+        <h1>Airglow ({ getCurrentVersion() })</h1>
         <div className={ 'alert alert-dismissible fade show' + (alertType !== null ? ` alert-${ alertType }` : '') }
              role="alert" style={ {display: alertType === null ? 'none' : 'block'} }>
           { status }

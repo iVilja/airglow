@@ -9,11 +9,12 @@ script:
   - yarn run build
 deploy:
   - provider: script
+    skip_cleanup: true
     script: npm run ci-deploy
     on:
       branch: master
   - provider: script
+    skip_cleanup: true
     script: npm run ci-tagged-deploy
     on:
-      branch: master
       tags: true

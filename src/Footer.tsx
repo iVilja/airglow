@@ -4,47 +4,11 @@ import * as React from 'react'
 
 import './Footer.css'
 
+import { compareVersion, getCurrentVersion } from './utils'
+
 interface IFooterState {
   versionList: string[]
   currentVersion: string
-}
-
-function getCurrentVersion(): string {
-  const versionNumber = process.env.REACT_APP_VERSION!
-  const tmp = window.location.pathname.split('/')
-  if (tmp.length > 1) {
-    const s = tmp[1]
-    if (s === 'latest') {
-      return s
-    } else if (s.startsWith('v')) {
-      const v = s.slice(1)
-      if (v !== versionNumber) {
-        return '???'
-      }
-    }
-  }
-  return versionNumber
-}
-
-function compareVersion(a: string, b: string): number {
-  if (a === 'latest') {
-    return -1
-  } else if (b === 'latest') {
-    return 1
-  }
-  const regex = /^(\d+)\.(\d+)\.(\d+)$/
-  const aa = a.match(regex)!
-  const bb = b.match(regex)!
-  for (const i of [1, 2, 3]) {
-    const x = parseInt(aa[i])
-    const y = parseInt(bb[i])
-    if (x > y) {
-      return -1
-    } else if (x < y) {
-      return 1
-    }
-  }
-  return 0
 }
 
 export default class Footer extends React.Component<{}, IFooterState> {
@@ -56,6 +20,7 @@ export default class Footer extends React.Component<{}, IFooterState> {
     this.state = {
       currentVersion,
       versionList: [
+        'latest',
         currentVersion
       ],
     }
@@ -82,7 +47,9 @@ export default class Footer extends React.Component<{}, IFooterState> {
 
   private onVersionSelected(e: React.ChangeEvent<HTMLSelectElement>) {
     const version = e.target.value
-    if (version === 'latest') {
+    if (e.target && e.target.selectedIndex === 1) {
+      window.location.pathname = '/stable'
+    } else if (version === 'latest') {
       window.location.pathname = '/latest'
     } else {
       window.location.pathname = `/v${version}`
