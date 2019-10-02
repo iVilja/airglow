@@ -40,4 +40,5 @@ else
     git add .
     git commit -m "Auto deploy: `git rev-parse --short HEAD`."
 fi
+git remote set-url --push origin https://${GITHUB_TOKEN}@github.com/ryukina/airglow.git
 git push
