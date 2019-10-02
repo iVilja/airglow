@@ -27,7 +27,7 @@ if [[ "$1" == "--tagged" ]]
 then
     SUBVERSION=`echo $VERSION | sed -r 's/\.[[:digit:]]+$//'`
     [ -e "./v$VERSION" ] && rm -rf "./v$VERSION"
-    [ -e "./v$SUBVERSION" ] && rm "./v$SUBVERSION"
+    [ -e "./v$SUBVERSION" ] && rm -rf "./v$SUBVERSION"
     cp ../build "./v$VERSION" -r
     ln -s "./v$VERSION" "./v$SUBVERSION"
     echo "latest" > ./VERSIONS
@@ -35,7 +35,7 @@ then
     if [[ -n $STABLE_VERSION ]]
     then
         [ -e "./stable" ] && rm "./stable"
-        ln -s "./v$STABLE_VERSION" "./stable"
+        ln -s "./$STABLE_VERSION" "./stable"
     fi
     git add .
     git commit -m "Auto deploy: $VERSION (`git rev-parse --short HEAD`)."
