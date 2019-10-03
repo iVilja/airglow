@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 error() {
     echo $1
@@ -36,12 +36,12 @@ then
         [ -h "./stable" ] && rm "./stable"
         ln -s "./$STABLE_VERSION" "./stable"
     fi
-    git diff-index --quiet HEAD || git add . && \
+    [ -z "$(git status --porcelain)" ] || git add . && \
         git commit -m "Auto deploy: $VERSION (`git rev-parse --short HEAD`)."
 else
     [ -d "./latest" ] && rm -rf ./latest
     cp ../build ./latest -r
-    git diff-index --quiet HEAD || git add . && \
+    [ -z "$(git status --porcelain)" ] || git add . && \
         git commit -m "Auto deploy: `git rev-parse --short HEAD`."
 fi
 git remote set-url --push origin https://${GITHUB_TOKEN}@github.com/ryukina/airglow.git

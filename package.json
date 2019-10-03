@@ -1,6 +1,6 @@
 {
   "name": "airglow",
-  "version": "0.1.1",
+  "version": "0.1.2",
   "dependencies": {
     "@ryukina/kissfft-wasm": "^1.0.0",
     "bootstrap": "^4.3.1",
