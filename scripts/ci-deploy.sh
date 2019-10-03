@@ -17,7 +17,7 @@ then
     STABLE_VERSION=`git describe --tags --abbrev=0 2>/dev/null` || echo "No stable version found."
 fi
 
-VERSION=$npm_package_version
+VERSION="v$npm_package_version"
 echo "Current version: $VERSION"
 
 [ -d "./gh-pages" ] && rm -rf ./gh-pages
@@ -26,10 +26,9 @@ git clone --single-branch --branch=gh-pages --depth=1 https://github.com/ryukina
 if [[ "$1" == "--tagged" ]]
 then
     SUBVERSION=`echo $VERSION | sed -r 's/\.[[:digit:]]+$//'`
-    [ -d "./v$VERSION" ] && rm -rf "./v$VERSION"
-    [ -h "./v$SUBVERSION" ] && rm "./v$SUBVERSION"
-    cp ../build "./v$VERSION" -r
-    ln -s "./v$VERSION" "./v$SUBVERSION"
+    rm -rf ./$SUBVERSION*
+    cp ../build "./$VERSION" -r
+    ln -s "./$VERSION" "./$SUBVERSION"
     echo "latest" > ./VERSIONS
     echo $TAGS >> ./VERSIONS
     if [[ -n $STABLE_VERSION ]]
