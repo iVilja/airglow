@@ -33,7 +33,7 @@ function putWatermarks(
   const nCols = Math.floor(original.width / secret.width)
   if (nRows === 0 || nCols === 0) {
     throw new Error(`Secret image is too large: use an image whose width <= ${ original.width } and` +
-      `height <= ${ Math.floor(original.height / 2) }`)
+      ` height <= ${ Math.floor(original.height / 2) }`)
   }
   const {width, height} = secret
   for (let i = 0; i < nRows; ++i) {
@@ -103,8 +103,19 @@ export function decodeWatermark(watermark: ImageData, rng: RNG) {
   return data
 }
 
+export function getScaled(encoded: HTMLImageElement, original: ImageData): ImageData {
+  const canvas = document.createElement('canvas')
+  const { width, height } = original
+  canvas.width = width
+  canvas.height = height
+  const ctx = canvas.getContext('2d')!
+  ctx.drawImage(encoded, 0, 0, width, height)
+  const scaled = ctx.getImageData(0, 0, width, height)
+  return scaled
+}
+
 export async function decode(
-  original: ImageData, encoded: ImageData,
+  original: ImageData, encoded: HTMLImageElement,
   secretKey: string, alpha: number,
   logger: Logger
 ): Promise<ImageData> {
@@ -116,9 +127,11 @@ export async function decode(
   }
   await logger(5, 'Calculating the frequency domain of original image')
   const fftOriginal = fft2Image(original)
-  await logger(20, 'Calculating the frequency domain of encoded image')
-  const fftEncoded = fft2Image(encoded)
-  await logger(40, 'Calculating the frequency domain of watermarks')
+  await logger(20, 'Scaling the encoded image')
+  const encodedScaled = getScaled(encoded, original)
+  await logger(30, 'Calculating the frequency domain of encoded image')
+  const fftEncoded = fft2Image(encodedScaled)
+  await logger(45, 'Calculating the frequency domain of watermarks')
   const mapFunction = (i: number) => (x: number, j: number) => (fftEncoded[i][j] - x) / alpha
   const fftWatermark: RGBA = [
     fftOriginal[0].map(mapFunction(0)),

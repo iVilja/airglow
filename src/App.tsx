@@ -142,16 +142,17 @@ class App extends React.Component<{}, IAppState> {
   public onDownload(type: ImageType) {
     return (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
-      const image = this.state.images[type]
-      if (image === null) {
+      const canvas = this.canvases[type].current
+      if (canvas  === null) {
         return
       }
-      const a = document.createElement('a')
-      a.href = image.src
-      a.download = 'encoded.png'
-      document.body.appendChild(a)
-      a.click()
-      document.body.removeChild(a)
+      const dataURL = canvas.toDataURL('image/png')
+      const title = `${type}.png`
+      const w = window.open('about:blank', title)!
+      w.document.title = title
+      const img = w.document.createElement('img')
+      img.src = dataURL
+      w.document.body.appendChild(img)
     }
   }
 
@@ -199,20 +200,20 @@ class App extends React.Component<{}, IAppState> {
     }
     this.isWorking = true
     const {alpha, secretKey} = this.state.formData
-    const data: any = {}
-    for (const typeName of ['original', 'encoded']) {
-      const type = typeName as ImageType
-      const ctx = this.canvases[type].current!.getContext('2d')!
-      const img = this.state.images[type]
-      if (img === null) {
-        return
-      }
-      data[type] = ctx.getImageData(0, 0, img.width, img.height)
+    const ctx = this.canvases.original.current!.getContext('2d')!
+    const originalImage = this.state.images.original
+    if (originalImage === null) {
+      return
+    }
+    const original = ctx.getImageData(0, 0, originalImage.width, originalImage.height)
+    const encoded = this.state.images.encoded
+    if (encoded === null) {
+      return
     }
     const canvas = this.canvases.secret.current!
     App.clearCanvas(canvas)
     try {
-      const result = await decode(data.original, data.encoded, secretKey, alpha / 100, this.onLogger)
+      const result = await decode(original, encoded, secretKey, alpha / 100, this.onLogger)
       canvas.width = result.width
       canvas.height = result.height
       const ctx = canvas.getContext('2d')!
