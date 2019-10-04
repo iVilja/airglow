@@ -36,13 +36,13 @@ then
         [ -h "./stable" ] && rm "./stable"
         ln -s "./$STABLE_VERSION" "./stable"
     fi
-    [ -z "$(git status --porcelain)" ] || git add . && \
-        git commit -m "Auto deploy: $VERSION (`git rev-parse --short HEAD`)."
+    git add . && git commit -m "Auto deploy: $VERSION (`git rev-parse --short HEAD`)." \
+        || echo "Nothing to commit."
 else
     [ -d "./latest" ] && rm -rf ./latest
     cp ../build ./latest -r
-    [ -z "$(git status --porcelain)" ] || git add . && \
-        git commit -m "Auto deploy: `git rev-parse --short HEAD`."
+    git add . && git commit -m "Auto deploy: `git rev-parse --short HEAD`." \
+        || echo "Nothing to commit."
 fi
 git remote set-url --push origin https://${GITHUB_TOKEN}@github.com/ryukina/airglow.git
 git push
