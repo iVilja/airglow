@@ -30,10 +30,13 @@ export default class Footer extends React.Component<{}, IFooterState> {
     try {
       const response = await fetch('/VERSIONS')
       const content = await response.text()
-      const versionList = content.split('\n')
+      const sorted = content.split('\n')
         .filter((x) => x.trim() !== '')
         .map((x) => x.startsWith('v') ? x.slice(1) : x)
-      versionList.sort(compareVersion)
+        .sort(compareVersion)
+      const versionList = sorted.filter((x, i) => i < 2 ||
+        !x.startsWith(sorted[i - 1].split('.').slice(0, -1).join('.'))
+      )
       this.setState({
         versionList
       })

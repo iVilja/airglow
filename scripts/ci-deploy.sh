@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -ex
+set -e
 
 error() {
     echo $1
@@ -30,7 +30,7 @@ then
     cp ../build "./$VERSION" -r
     ln -s "./$VERSION" "./$SUBVERSION"
     echo "latest" > ./VERSIONS
-    echo $TAGS >> ./VERSIONS
+    echo "$TAGS" >> ./VERSIONS
     if [[ -n $STABLE_VERSION ]]
     then
         [ -h "./stable" ] && rm "./stable"
