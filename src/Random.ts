@@ -3,7 +3,7 @@
  * http://prng.di.unimi.it
  */
 
-/* tslint:disable:no-bitwise */
+/* eslint-disable no-bitwise */
 
 import { swap } from './utils'
 
@@ -56,7 +56,7 @@ export class RNG {
     this.setState(seed)
   }
 
-  public setState(state?: RandomSeed) {
+  public setState(state?: RandomSeed): void {
     if (state === undefined || typeof state !== 'object') {
       const seed: [number] = [RNG.makeSeed(state)]
       const a = RNG.splitMix32(seed)

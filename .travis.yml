@@ -4,14 +4,8 @@ node_js:
 notifications:
   email: false
 
-before_install:
-  - echo "//npm.pkg.github.com/:_authToken=\${GITHUB_REGISTRY_TOKEN}" >> ~/.npmrc
-
 script:
   - npm run build
-
-before_deploy:
-  - ./scripts/ci-prepare.sh
 
 deploy:
   - provider: script

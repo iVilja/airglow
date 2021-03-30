@@ -11,10 +11,10 @@ interface IFooterState {
   currentVersion: string
 }
 
-export default class Footer extends React.Component<{}, IFooterState> {
+export default class Footer extends React.Component<Record<string, never>, IFooterState> {
   private onVersionSelectedHandler = this.onVersionSelected.bind(this)
 
-  constructor (props: {}) {
+  constructor (props: Record<string, never>) {
     super(props)
     const currentVersion = getCurrentVersion()
     this.state = {
@@ -26,7 +26,7 @@ export default class Footer extends React.Component<{}, IFooterState> {
     }
   }
 
-  private async fetchVersionList() {
+  private async fetchVersionList(): Promise<void> {
     try {
       const response = await fetch('/VERSIONS')
       const content = await response.text()
@@ -41,16 +41,16 @@ export default class Footer extends React.Component<{}, IFooterState> {
         versionList
       })
     } catch {
-      // tslint:disable-next-line:no-console
+      // eslint-disable-next-line no-console
       console.warn("Unable to fetch the version list.")
     }
   }
 
-  public componentDidMount() {
-    this.fetchVersionList()
+  public componentDidMount(): void {
+    void this.fetchVersionList()
   }
 
-  private onVersionSelected(e: React.ChangeEvent<HTMLSelectElement>) {
+  private onVersionSelected(e: React.ChangeEvent<HTMLSelectElement>): void {
     const version = e.target.value
     if (e.target && e.target.selectedIndex === 1) {
       window.location.pathname = '/stable'
@@ -61,11 +61,11 @@ export default class Footer extends React.Component<{}, IFooterState> {
     }
   }
 
-  public render() {
+  public render(): JSX.Element {
     return <footer className="footer mt-auto py-3">
       <div className="footer-container container">
         <div className="text-muted footer-block">By <a href="https://vilja.me">Vilja</a> @ <a href="https://github.com/commoon">Commoon Labs</a>.&nbsp;</div>
-        <div className="text-muted footer-block">Source code on <a href={ process.env.REACT_APP_REPOSITORY! }>GitHub</a>.&nbsp;</div>
+        <div className="text-muted footer-block">Source code on <a href={ process.env.REACT_APP_REPOSITORY }>GitHub</a>.&nbsp;</div>
         <div className="footer-block">
           <span className="text-muted">Version: </span>
           <select className="custom-select custom-select-sm"

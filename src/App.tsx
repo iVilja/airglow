@@ -5,14 +5,14 @@ import * as React from 'react'
 import './App.css'
 
 import { decode, encode, getMaxWatermarks } from './airglow'
-import { getCurrentVersion, AlertType } from './utils'
+import { getCurrentVersion, AlertType, getContext } from './utils'
 
 import Footer from './Footer'
 
 interface IAppFormData {
   secretKey: string
-  alpha: number
-  nWatermarks: number
+  alpha: string
+  nWatermarks: string
 }
 
 interface IAppState {
@@ -29,13 +29,13 @@ interface IAppState {
 
 type ImageType = 'original' | 'secret' | 'encoded'
 
-class App extends React.Component<{}, IAppState> {
+class App extends React.Component<Record<string, never>, IAppState> {
 
-  private static clearCanvas(canvas: HTMLCanvasElement) {
+  private static clearCanvas(canvas: HTMLCanvasElement): void {
     canvas.width = 10
     canvas.height = 10
-    const ctx = canvas.getContext('2d')
-    ctx!.clearRect(0, 0, 10, 10)
+    const ctx = getContext(canvas)
+    ctx.clearRect(0, 0, 10, 10)
   }
 
   public canvases = {
@@ -52,13 +52,13 @@ class App extends React.Component<{}, IAppState> {
   private logging: (() => void) | null = null
   private isWorking = false
 
-  public constructor(props: {}) {
+  public constructor(props: Record<string, never>) {
     super(props)
     this.state = {
       alertType: null,
       formData: {
-        alpha: 1,
-        nWatermarks: 1,
+        alpha: '1',
+        nWatermarks: '1',
         secretKey: ''
       },
       images: {
@@ -69,15 +69,14 @@ class App extends React.Component<{}, IAppState> {
       progress: 0,
       status: ''
     }
-    // @ts-ignore
     window.app = this
   }
 
-  public dismissAlert() {
-    this.setState({alertType: null, status: ''})
+  public dismissAlert(): void {
+    this.setState({ alertType: null, status: '' })
   }
 
-  public updateImage(type: ImageType, image: HTMLImageElement | null) {
+  public updateImage(type: ImageType, image: HTMLImageElement | null): void {
     const images = this.state.images
     images[type] = image
     this.setState({
@@ -85,7 +84,7 @@ class App extends React.Component<{}, IAppState> {
     })
   }
 
-  public onChangeFile(type: ImageType) {
+  public onChangeFile(type: ImageType): (e: React.ChangeEvent<HTMLInputElement>) => void {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
       const canvas = this.canvases[type].current
       if (canvas === null) {
@@ -104,8 +103,8 @@ class App extends React.Component<{}, IAppState> {
       image.onload = () => {
         canvas.width = image.width
         canvas.height = image.height
-        const ctx = canvas.getContext('2d')
-        ctx!.drawImage(image, 0, 0)
+        const ctx = getContext(canvas)
+        ctx.drawImage(image, 0, 0)
         this.updateImage(type, image)
       }
       reader.onloadend = () => {
@@ -139,16 +138,19 @@ class App extends React.Component<{}, IAppState> {
     }
   }
 
-  public onDownload(type: ImageType) {
+  public onDownload(type: ImageType): (e: React.MouseEvent<HTMLButtonElement>) => void {
     return (e: React.MouseEvent<HTMLButtonElement>) => {
       e.preventDefault()
       const canvas = this.canvases[type].current
-      if (canvas  === null) {
+      if (canvas === null) {
         return
       }
       const dataURL = canvas.toDataURL('image/png')
-      const title = `${type}.png`
-      const w = window.open('about:blank', title)!
+      const title = `${ type }.png`
+      const w = window.open('about:blank', title)
+      if (!w) {
+        throw Error('Cannot download.')
+      }
       w.document.title = title
       const img = w.document.createElement('img')
       img.src = dataURL
@@ -156,30 +158,39 @@ class App extends React.Component<{}, IAppState> {
     }
   }
 
-  public async encode(e: React.MouseEvent<HTMLButtonElement>) {
-    e.preventDefault()
+  public async encode(event: React.MouseEvent<HTMLButtonElement>): Promise<void> {
+    event.preventDefault()
     if (this.isWorking) {
       return
     }
     this.isWorking = true
-    const {secretKey, alpha, nWatermarks} = this.state.formData
-    const data: any = {}
+    const { secretKey, alpha, nWatermarks } = this.state.formData
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any,@typescript-eslint/no-unsafe-assignment
+    const data: { [type in ImageType]: ImageData } = {} as any
     for (const typeName of ['original', 'secret']) {
       const type = typeName as ImageType
-      const ctx = this.canvases[type].current!.getContext('2d')!
+      const ctx = getContext(this.canvases[type].current)
       const img = this.state.images[type]
       if (img === null) {
         return
       }
       data[type] = ctx.getImageData(0, 0, img.width, img.height)
     }
-    const canvas = this.canvases.encoded.current!
+    const canvas = this.canvases.encoded.current
+    if (!canvas) {
+      throw new Error('Not initialized.')
+    }
     App.clearCanvas(canvas)
     try {
-      const result = await encode(data.original, data.secret, secretKey, nWatermarks, alpha / 100, this.onLogger)
+      const result = await encode(
+          data.original, data.secret,
+          secretKey,
+          parseInt(nWatermarks, 10), parseFloat(alpha) / 100,
+          this.onLogger
+      )
       canvas.width = result.width
       canvas.height = result.height
-      const ctx = canvas.getContext('2d')!
+      const ctx = getContext(canvas)
       ctx.putImageData(result, 0, 0)
       const image = document.createElement('img')
       image.onload = () => this.updateImage('encoded', image)
@@ -187,36 +198,42 @@ class App extends React.Component<{}, IAppState> {
     } catch (e) {
       this.setState({
         alertType: 'danger',
-        status: e.message
+        status: (e as Error).message
       })
     }
     this.isWorking = false
   }
 
-  public async decode(e: React.MouseEvent<HTMLButtonElement>) {
-    e.preventDefault()
+  public async decode(event: React.MouseEvent<HTMLButtonElement>): Promise<void> {
+    event.preventDefault()
     if (this.isWorking) {
       return
     }
     this.isWorking = true
-    const {alpha, secretKey} = this.state.formData
-    const ctx = this.canvases.original.current!.getContext('2d')!
+    const { alpha, secretKey } = this.state.formData
+    const ctxOriginal = getContext(this.canvases.original.current)
     const originalImage = this.state.images.original
     if (originalImage === null) {
       return
     }
-    const original = ctx.getImageData(0, 0, originalImage.width, originalImage.height)
+    const original = ctxOriginal.getImageData(0, 0, originalImage.width, originalImage.height)
     const encoded = this.state.images.encoded
     if (encoded === null) {
       return
     }
-    const canvas = this.canvases.secret.current!
+    const canvas = this.canvases.secret.current
+    if (!canvas) {
+      throw new Error('No canvas.')
+    }
     App.clearCanvas(canvas)
     try {
-      const result = await decode(original, encoded, secretKey, alpha / 100, this.onLogger)
+      const result = await decode(
+          original, encoded, secretKey,
+          parseFloat(alpha) / 100, this.onLogger
+      )
       canvas.width = result.width
       canvas.height = result.height
-      const ctx = canvas.getContext('2d')!
+      const ctx = getContext(canvas)
       ctx.putImageData(result, 0, 0)
       const image = document.createElement('img')
       image.onload = () => this.updateImage('secret', image)
@@ -224,14 +241,14 @@ class App extends React.Component<{}, IAppState> {
     } catch (e) {
       this.setState({
         alertType: 'danger',
-        status: e.message
+        status: (e as Error).message
       })
     }
     this.isWorking = false
   }
 
-  public render() {
-    const {alertType, formData, images, progress, status} = this.state
+  public render(): JSX.Element {
+    const { alertType, formData, images, progress, status } = this.state
     const encodeDisabled = images.original === null || images.secret === null || formData.secretKey.trim() === ''
     const decodeDisabled = images.encoded === null || images.original === null || formData.secretKey.trim() === ''
     const maxWatermarks = getMaxWatermarks(images.original, images.secret)
@@ -239,7 +256,7 @@ class App extends React.Component<{}, IAppState> {
       <form className="airglow-form container-fluid">
         <h1>Airglow ({ getCurrentVersion() })</h1>
         <div className={ 'alert alert-dismissible fade show' + (alertType !== null ? ` alert-${ alertType }` : '') }
-             role="alert" style={ {display: alertType === null ? 'none' : 'block'} }>
+             role="alert" style={ { display: alertType === null ? 'none' : 'block' } }>
           { status }
           <button type="button" className="close" data-dismiss="alert" aria-label="Close"
                   onClick={ this.onDismissAlert }>
@@ -248,7 +265,7 @@ class App extends React.Component<{}, IAppState> {
         </div>
         <div className="airglow-progress progress">
           <div className="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-               style={ {width: `${ progress }%`} }/>
+               style={ { width: `${ progress }%` } }/>
         </div>
         <div className="row">
           <div className="col-12 col-lg-4 container">
@@ -308,7 +325,7 @@ class App extends React.Component<{}, IAppState> {
               </small>
             </div>
             <div className="form-group">
-              <label htmlFor="forAlpha">Alpha: { formData.alpha / 100 }</label>
+              <label htmlFor="forAlpha">Alpha: { parseFloat(formData.alpha) / 100 }</label>
               <input type="range" className="custom-range" id="forAlpha" min={ 1 } max={ 100 }
                      value={ formData.alpha } onChange={ this.onChangeFormData('alpha') }/>
             </div>
@@ -354,10 +371,10 @@ class App extends React.Component<{}, IAppState> {
     </div>)
   }
 
-  public onChangeFormData(key: keyof IAppFormData) {
+  public onChangeFormData(key: keyof IAppFormData): (e: React.ChangeEvent<HTMLInputElement>) => void {
     return (e: React.ChangeEvent<HTMLInputElement>) => {
-      const formData = this.state.formData as any
-      formData[key] = (e.target as HTMLInputElement).value
+      const formData = this.state.formData
+      formData[key] = e.target.value
       this.setState({
         formData
       })

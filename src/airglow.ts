@@ -1,9 +1,9 @@
 import { fft2Image, ifft2Image } from './fft'
 
 import { RNG } from './Random'
-import { Logger, RGBA } from './utils'
+import { getContext, Logger } from './utils'
 
-export function getMaxWatermarks(original: HTMLImageElement | null, secret: HTMLImageElement | null): number {
+export const getMaxWatermarks = (original: HTMLImageElement | null, secret: HTMLImageElement | null): number => {
   if (original === null || secret === null) {
     return 0
   }
@@ -12,7 +12,7 @@ export function getMaxWatermarks(original: HTMLImageElement | null, secret: HTML
   return nRows * nCols
 }
 
-function shuffleWatermark(data: ImageData, rng: RNG): ImageData {
+const shuffleWatermark = (data: ImageData, rng: RNG): ImageData => {
   const length = Math.floor(data.data.length / 4)
   const shuffleMap = rng.getPermutation(Math.floor(length / 2))
   const newData = new ImageData(data.data.slice(), data.width, data.height)
@@ -25,17 +25,17 @@ function shuffleWatermark(data: ImageData, rng: RNG): ImageData {
   return newData
 }
 
-function putWatermarks(
+const putWatermarks = (
   canvas: HTMLCanvasElement, ctx: CanvasRenderingContext2D,
   original: ImageData, secret: ImageData, nWatermarks: number
-) {
+): void => {
   const nRows = Math.floor(original.height / 2 / secret.height)
   const nCols = Math.floor(original.width / secret.width)
   if (nRows === 0 || nCols === 0) {
     throw new Error(`Secret image is too large: use an image whose width <= ${ original.width } and` +
       ` height <= ${ Math.floor(original.height / 2) }`)
   }
-  const {width, height} = secret
+  const { width, height } = secret
   for (let i = 0; i < nRows; ++i) {
     for (let j = 0; j < nCols; ++j) {
       nWatermarks -= 1
@@ -47,23 +47,23 @@ function putWatermarks(
   }
 }
 
-function makeWatermark(original: ImageData, secret: ImageData, rng: RNG, nWatermarks: number = 1): ImageData {
+const makeWatermark = (original: ImageData, secret: ImageData, rng: RNG, nWatermarks = 1): ImageData => {
   const canvas = document.createElement('canvas')
-  const {width, height} = original
+  const { width, height } = original
   canvas.width = width
   canvas.height = height
-  const ctx = canvas.getContext('2d')!
-    putWatermarks(canvas, ctx, original, secret, nWatermarks)
+  const ctx = getContext(canvas)
+  putWatermarks(canvas, ctx, original, secret, nWatermarks)
   const data = ctx.getImageData(0, 0, width, height)
   const shuffledData = shuffleWatermark(data, rng)
   return shuffledData
 }
 
-export async function encode(
+export const encode = async (
   original: ImageData, secret: ImageData,
   secretKey: string, nWatermark: number, alpha: number,
   logger: Logger
-): Promise<ImageData> {
+): Promise<ImageData> => {
   await logger(0, 'Initializing')
   secretKey = secretKey.trim()
   if (secretKey === '') {
@@ -73,24 +73,18 @@ export async function encode(
   const rng = new RNG(secretKey)
   const watermark = makeWatermark(original, secret, rng, nWatermark)
   await logger(20, 'Calculating the frequency domain of original image')
-  const fftOriginal = fft2Image(original)
+  const fftOriginal = await fft2Image(original)
   await logger(40, 'Calculating the frequency domain of watermarks')
-  const fftWatermark = fft2Image(watermark)
+  const fftWatermark = await fft2Image(watermark)
   await logger(60, 'Calculating the frequency domain of encoded image')
-  const mapFunction = (i: number) => (x: number, j: number) => x + fftWatermark[i][j] * alpha
-  const fftEncoded: RGBA = [
-    fftOriginal[0].map(mapFunction(0)),
-    fftOriginal[1].map(mapFunction(1)),
-    fftOriginal[2].map(mapFunction(2)),
-    fftOriginal[3]
-  ]
+  const fftEncoded = fftOriginal.add(fftWatermark)
   await logger(80, 'Calculating the resulting image')
-  const encoded = ifft2Image(fftEncoded, original.width, original.height)
+  const encoded = await ifft2Image(fftEncoded, original.width, original.height)
   await logger(100, 'Finished!', 'success')
   return encoded
 }
 
-export function decodeWatermark(watermark: ImageData, rng: RNG) {
+export const decodeWatermark = (watermark: ImageData, rng: RNG): ImageData => {
   const length = Math.floor(watermark.data.length / 4)
   const shuffleMap = rng.getPermutation(Math.floor(length / 2))
   const data = new ImageData(watermark.data.slice(), watermark.width, watermark.height)
@@ -103,22 +97,22 @@ export function decodeWatermark(watermark: ImageData, rng: RNG) {
   return data
 }
 
-export function getScaled(encoded: HTMLImageElement, original: ImageData): ImageData {
+export const getScaled = (encoded: HTMLImageElement, original: ImageData): ImageData => {
   const canvas = document.createElement('canvas')
   const { width, height } = original
   canvas.width = width
   canvas.height = height
-  const ctx = canvas.getContext('2d')!
+  const ctx = getContext(canvas)
   ctx.drawImage(encoded, 0, 0, width, height)
   const scaled = ctx.getImageData(0, 0, width, height)
   return scaled
 }
 
-export async function decode(
+export const decode = async (
   original: ImageData, encoded: HTMLImageElement,
   secretKey: string, alpha: number,
   logger: Logger
-): Promise<ImageData> {
+): Promise<ImageData> => {
   await logger(0, 'Initializing')
   secretKey = secretKey.trim()
   if (secretKey === ''
@@ -126,21 +120,15 @@ export async function decode(
     throw new Error('Secret key cannot be empty')
   }
   await logger(5, 'Calculating the frequency domain of original image')
-  const fftOriginal = fft2Image(original)
+  const fftOriginal = await fft2Image(original)
   await logger(20, 'Scaling the encoded image')
   const encodedScaled = getScaled(encoded, original)
   await logger(30, 'Calculating the frequency domain of encoded image')
-  const fftEncoded = fft2Image(encodedScaled)
+  const fftEncoded = await fft2Image(encodedScaled)
   await logger(45, 'Calculating the frequency domain of watermarks')
-  const mapFunction = (i: number) => (x: number, j: number) => (fftEncoded[i][j] - x) / alpha
-  const fftWatermark: RGBA = [
-    fftOriginal[0].map(mapFunction(0)),
-    fftOriginal[1].map(mapFunction(1)),
-    fftOriginal[2].map(mapFunction(2)),
-    fftOriginal[3]
-  ]
+  const fftWatermark = fftEncoded.sub(fftOriginal)
   await logger(60, 'Calculating the watermarks image')
-  const watermark = ifft2Image(fftWatermark, original.width, original.height)
+  const watermark = await ifft2Image(fftWatermark, original.width, original.height)
   await logger(80, 'Calculating the resulting image')
   const rng = new RNG(secretKey)
   const decoded = decodeWatermark(watermark, rng)
