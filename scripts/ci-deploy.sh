@@ -11,7 +11,7 @@ error() {
 
 [ -d "./build" ] || error "./build folder not found."
 
-if [[ "$1" == "--tagged" ]]
+if [[ "$1" == "--release" ]]
 then
     TAGS=`git tag`
     STABLE_VERSION=`git describe --tags --abbrev=0 2>/dev/null` || echo "No stable version found."
@@ -23,7 +23,7 @@ echo "Current version: $VERSION"
 [ -d "./gh-pages" ] && rm -rf ./gh-pages
 mkdir ./gh-pages && cd ./gh-pages
 git clone --single-branch --branch=gh-pages --depth=1 https://github.com/ryukina/airglow.git .
-if [[ "$1" == "--tagged" ]]
+if [[ "$1" == "--release" ]]
 then
     SUBVERSION=`echo $VERSION | sed -r 's/\.[[:digit:]]+$//'`
     rm -rf ./$SUBVERSION*

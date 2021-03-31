@@ -11,7 +11,7 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "ci-deploy": "./scripts/ci-deploy.sh",
-    "ci-tagged-deploy": "./scripts/ci-deploy.sh --tagged",
+    "ci-release-deploy": "./scripts/ci-deploy.sh --release",
     "test": "react-scripts test --env=jsdom",
     "lint": "eslint . --ext js,ts,tsx",
     "lint-fix": "eslint . --ext js,ts,tsx --fix"
