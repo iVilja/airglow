@@ -36,3 +36,4 @@ jobs:
         env:
           COMMOON_BOT_KEY: ${{ secrets.COMMOON_BOT_KEY }}
           COMMOON_BOT_IV: ${{ secrets.COMMOON_BOT_IV }}
+          GITHUB_TOKEN: ${{ secrets.TOKEN_GITHUB }}
