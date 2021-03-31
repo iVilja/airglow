@@ -1,16 +1,18 @@
 import * as React from 'react'
 import * as ReactDOM from 'react-dom'
-// import * as tf from '@tensorflow/tfjs'
-// import '@tensorflow/tfjs-backend-wasm'
 
 import App from './App'
 import './index.css'
 import registerServiceWorker from './registerServiceWorker'
 
-// void tf.setBackend('wasm')
+window.onOpenCVReady = async () => {
+  delete window.onOpenCVReady
+  // eslint-disable-next-line @typescript-eslint/await-thenable
+  window.cv = await window.cv
 
-ReactDOM.render(
-  <App/>,
-  document.getElementById('root') as HTMLElement
-)
-registerServiceWorker()
+  ReactDOM.render(
+    <App/>,
+    document.getElementById('root') as HTMLElement
+  )
+  registerServiceWorker()
+}

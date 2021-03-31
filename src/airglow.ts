@@ -1,4 +1,4 @@
-import { fft2Image, ifft2Image } from './fft'
+import { fft2Image, free, ifft2Image, Tensor } from './fft'
 
 import { RNG } from './Random'
 import { getContext, Logger } from './utils'
@@ -59,6 +59,28 @@ const makeWatermark = (original: ImageData, secret: ImageData, rng: RNG, nWaterm
   return shuffledData
 }
 
+interface MixArguments {
+  alpha: number
+}
+
+const mix = (original: Tensor, secret: Tensor, args: MixArguments): Tensor => {
+  return original.map((x, i) => {
+      const t = new cv.Mat()
+      cv.addWeighted(secret[i], args.alpha, x, 1, 0, t)
+      return t
+    }
+  ) as Tensor
+}
+
+const separate = (original: Tensor, encoded: Tensor, args: MixArguments): Tensor => {
+  return original.map((x, i) => {
+    const t = new cv.Mat()
+    cv.addWeighted(encoded[i], 1, x, -1, 0, t)
+    cv.addWeighted(t, args.alpha, t, 0, 0, t)
+    return t
+  }) as Tensor
+}
+
 export const encode = async (
   original: ImageData, secret: ImageData,
   secretKey: string, nWatermark: number, alpha: number,
@@ -71,17 +93,19 @@ export const encode = async (
   }
   await logger(5, 'Making watermarks')
   const rng = new RNG(secretKey)
-  // eslint-disable-next-line
   const watermark = makeWatermark(original, secret, rng, nWatermark)
   await logger(20, 'Calculating the frequency domain of original image')
   const fftOriginal = await fft2Image(original)
   await logger(40, 'Calculating the frequency domain of watermarks')
-  // const fftWatermark = await fft2Image(watermark)
+  const fftWatermark = await fft2Image(watermark)
   await logger(60, 'Calculating the frequency domain of encoded image')
-  const fftEncoded = fftOriginal  // .add(fftWatermark)
+  const fftEncoded = mix(fftOriginal, fftWatermark, { alpha })
   await logger(80, 'Calculating the resulting image')
   const encoded = await ifft2Image(fftEncoded, original.width, original.height)
   await logger(100, 'Finished!', 'success')
+  free(fftOriginal)
+  free(fftWatermark)
+  free(fftEncoded)
   return encoded
 }
 
@@ -121,19 +145,21 @@ export const decode = async (
     throw new Error('Secret key cannot be empty')
   }
   await logger(5, 'Calculating the frequency domain of original image')
-  // eslint-disable-next-line
   const fftOriginal = await fft2Image(original)
   await logger(20, 'Scaling the encoded image')
   const encodedScaled = getScaled(encoded, original)
   await logger(30, 'Calculating the frequency domain of encoded image')
   const fftEncoded = await fft2Image(encodedScaled)
   await logger(45, 'Calculating the frequency domain of watermarks')
-  const fftWatermark = fftEncoded  // .sub(fftOriginal)
+  const fftWatermark = separate(fftOriginal, fftEncoded, { alpha })
   await logger(60, 'Calculating the watermarks image')
   const watermark = await ifft2Image(fftWatermark, original.width, original.height)
   await logger(80, 'Calculating the resulting image')
   const rng = new RNG(secretKey)
   const decoded = decodeWatermark(watermark, rng)
   await logger(100, 'Finished!', 'success')
+  free(fftOriginal)
+  free(fftWatermark)
+  free(fftEncoded)
   return decoded
 }
