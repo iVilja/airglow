@@ -59,7 +59,7 @@ class App extends React.Component<Record<string, never>, IAppState> {
       formData: {
         alpha: '1',
         nWatermarks: '1',
-        secretKey: ''
+        secretKey: 'Airglow'
       },
       images: {
         encoded: null,
@@ -117,10 +117,20 @@ class App extends React.Component<Record<string, never>, IAppState> {
     }
   }
 
-  public logger(progress: number, status: string, alertType: AlertType = 'primary'): Promise<void> {
+  public logger(progress: number | null, status: string, alertType: AlertType = 'primary', stack?: string): Promise<void> {
     return new Promise<void>(resolve => {
+      if (alertType === 'danger') {
+        // eslint-disable-next-line no-console
+        console.error(stack === undefined ? status : stack)
+      } else {
+        // eslint-disable-next-line no-console
+        console.log(status)
+      }
       this.logging = () => {
         resolve()
+      }
+      if (progress === null) {
+        progress = this.state.progress
       }
       this.setState({
         alertType,
@@ -183,10 +193,10 @@ class App extends React.Component<Record<string, never>, IAppState> {
     App.clearCanvas(canvas)
     try {
       const result = await encode(
-          data.original, data.secret,
-          secretKey,
-          parseInt(nWatermarks, 10), parseFloat(alpha) / 100,
-          this.onLogger
+        data.original, data.secret,
+        secretKey,
+        parseInt(nWatermarks, 10), parseFloat(alpha) / 100,
+        this.onLogger
       )
       canvas.width = result.width
       canvas.height = result.height
@@ -196,10 +206,8 @@ class App extends React.Component<Record<string, never>, IAppState> {
       image.onload = () => this.updateImage('encoded', image)
       image.src = canvas.toDataURL('image/png')
     } catch (e) {
-      this.setState({
-        alertType: 'danger',
-        status: (e as Error).message
-      })
+      const err = e as Error
+      await this.logger(null, err.message, 'danger', err.stack)
     }
     this.isWorking = false
   }
@@ -228,8 +236,8 @@ class App extends React.Component<Record<string, never>, IAppState> {
     App.clearCanvas(canvas)
     try {
       const result = await decode(
-          original, encoded, secretKey,
-          parseFloat(alpha) / 100, this.onLogger
+        original, encoded, secretKey,
+        parseFloat(alpha) / 100, this.onLogger
       )
       canvas.width = result.width
       canvas.height = result.height
@@ -239,10 +247,8 @@ class App extends React.Component<Record<string, never>, IAppState> {
       image.onload = () => this.updateImage('secret', image)
       image.src = canvas.toDataURL('image/png')
     } catch (e) {
-      this.setState({
-        alertType: 'danger',
-        status: (e as Error).message
-      })
+      const err = e as Error
+      await this.logger(null, err.message, 'danger', err.stack)
     }
     this.isWorking = false
   }

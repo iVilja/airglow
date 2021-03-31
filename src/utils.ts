@@ -53,3 +53,5 @@ export const getContext = (canvas: HTMLCanvasElement | null): CanvasRenderingCon
   }
   return ctx
 }
+
+export const isDevelopment = process.env.NODE_ENV === "development"

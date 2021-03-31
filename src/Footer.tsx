@@ -4,7 +4,7 @@ import * as React from 'react'
 
 import './Footer.css'
 
-import { compareVersion, getCurrentVersion } from './utils'
+import { compareVersion, getCurrentVersion, isDevelopment } from './utils'
 
 interface IFooterState {
   versionList: string[]
@@ -14,7 +14,7 @@ interface IFooterState {
 export default class Footer extends React.Component<Record<string, never>, IFooterState> {
   private onVersionSelectedHandler = this.onVersionSelected.bind(this)
 
-  constructor (props: Record<string, never>) {
+  constructor(props: Record<string, never>) {
     super(props)
     const currentVersion = getCurrentVersion()
     this.state = {
@@ -27,6 +27,9 @@ export default class Footer extends React.Component<Record<string, never>, IFoot
   }
 
   private async fetchVersionList(): Promise<void> {
+    if (isDevelopment) {
+      return
+    }
     try {
       const response = await fetch('/VERSIONS')
       const content = await response.text()
@@ -42,7 +45,7 @@ export default class Footer extends React.Component<Record<string, never>, IFoot
       })
     } catch {
       // eslint-disable-next-line no-console
-      console.warn("Unable to fetch the version list.")
+      console.warn('Unable to fetch the version list.')
     }
   }
 
@@ -57,21 +60,23 @@ export default class Footer extends React.Component<Record<string, never>, IFoot
     } else if (version === 'latest') {
       window.location.pathname = '/latest'
     } else {
-      window.location.pathname = `/v${version}`
+      window.location.pathname = `/v${ version }`
     }
   }
 
   public render(): JSX.Element {
     return <footer className="footer mt-auto py-3">
       <div className="footer-container container">
-        <div className="text-muted footer-block">By <a href="https://vilja.me">Vilja</a> @ <a href="https://github.com/commoon">Commoon Labs</a>.&nbsp;</div>
-        <div className="text-muted footer-block">Source code on <a href={ process.env.REACT_APP_REPOSITORY }>GitHub</a>.&nbsp;</div>
+        <div className="text-muted footer-block">By <a href="https://vilja.me">Vilja</a> @ <a
+          href="https://github.com/commoon">Commoon Labs</a>.&nbsp;</div>
+        <div className="text-muted footer-block">Source code on <a
+          href={ process.env.REACT_APP_REPOSITORY }>GitHub</a>.&nbsp;</div>
         <div className="footer-block">
           <span className="text-muted">Version: </span>
           <select className="custom-select custom-select-sm"
-            value={ this.state.currentVersion } onChange={ this.onVersionSelectedHandler }>
+                  value={ this.state.currentVersion } onChange={ this.onVersionSelectedHandler }>
             { this.state.versionList.map((version, i) => <option key={ i }
-              value={ version }>{ version + (i === 1 ? ' (stable)' : '') }</option>) }
+                                                                 value={ version }>{ version + (i === 1 ? ' (stable)' : '') }</option>) }
           </select>
         </div>
       </div>
