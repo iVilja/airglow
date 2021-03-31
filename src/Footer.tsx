@@ -20,7 +20,7 @@ export default class Footer extends React.Component<Record<string, never>, IFoot
     this.state = {
       currentVersion,
       versionList: [
-        'latest',
+        'dev',
         currentVersion
       ],
     }
@@ -57,8 +57,8 @@ export default class Footer extends React.Component<Record<string, never>, IFoot
     const version = e.target.value
     if (e.target && e.target.selectedIndex === 1) {
       window.location.pathname = '/stable'
-    } else if (version === 'latest') {
-      window.location.pathname = '/latest'
+    } else if (version === 'dev') {
+      window.location.pathname = '/dev'
     } else {
       window.location.pathname = `/v${ version }`
     }

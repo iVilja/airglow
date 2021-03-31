@@ -29,7 +29,7 @@ then
     rm -rf ./$SUBVERSION*
     cp ../build "./$VERSION" -r
     ln -s "./$VERSION" "./$SUBVERSION"
-    echo "latest" > ./VERSIONS
+    echo "dev" > ./VERSIONS
     echo "$TAGS" >> ./VERSIONS
     if [[ -n $STABLE_VERSION ]]
     then
@@ -39,8 +39,8 @@ then
     git add . && git commit -m "Auto deploy: $VERSION (`git rev-parse --short HEAD`)." \
         || echo "Nothing to commit."
 else
-    [ -d "./latest" ] && rm -rf ./latest
-    cp ../build ./latest -r
+    [ -d "./dev" ] && rm -rf ./dev
+    cp ../build ./dev -r
     git add . && git commit -m "Auto deploy: `git rev-parse --short HEAD`." \
         || echo "Nothing to commit."
 fi

@@ -13,7 +13,7 @@ export const getCurrentVersion = (): string => {
   const tmp = window.location.pathname.split('/')
   if (tmp.length > 1) {
     const s = tmp[1]
-    if (s === 'latest') {
+    if (s === 'dev') {
       return s
     } else if (s.startsWith('v')) {
       const v = s.slice(1)
@@ -26,9 +26,9 @@ export const getCurrentVersion = (): string => {
 }
 
 export const compareVersion = (a: string, b: string): number => {
-  if (a === 'latest') {
+  if (a === 'dev') {
     return -1
-  } else if (b === 'latest') {
+  } else if (b === 'dev') {
     return 1
   }
   const regex = /^(\d+)\.(\d+)\.(\d+)$/
