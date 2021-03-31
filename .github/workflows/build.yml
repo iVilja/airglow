@@ -34,3 +34,6 @@ jobs:
     - run: npm install
     - run: npm run build
     - run: npm run ci-deploy
+      env:
+        COMMOON_BOT_KEY: $COMMOON_BOT_KEY
+        COMMOON_BOT_IV: $COMMOON_BOT_IV
