@@ -20,6 +20,8 @@ fi
 VERSION="v$npm_package_version"
 echo "Current version: $VERSION"
 
+GIT_HASH=`git rev-parse --short HEAD`
+
 [ -d "./gh-pages" ] && rm -rf ./gh-pages
 mkdir ./gh-pages && cd ./gh-pages
 git clone --single-branch --branch=gh-pages --depth=1 https://github.com/ryukina/airglow.git .
@@ -36,12 +38,12 @@ then
         [ -h "./stable" ] && rm "./stable"
         ln -s "./$STABLE_VERSION" "./stable"
     fi
-    git add . && git commit -m "Auto deploy: $VERSION (`git rev-parse --short HEAD`)." \
+    git add . && git commit -m "Auto deploy: $VERSION ($GIT_HASH)." \
         || echo "Nothing to commit."
 else
     [ -d "./dev" ] && rm -rf ./dev
     cp ../build ./dev -r
-    git add . && git commit -m "Auto deploy: `git rev-parse --short HEAD`." \
+    git add . && git commit -m "Auto deploy: $GIT_HASH." \
         || echo "Nothing to commit."
 fi
 git remote set-url --push origin https://${GITHUB_TOKEN}@github.com/ryukina/airglow.git
