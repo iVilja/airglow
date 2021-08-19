@@ -3,6 +3,12 @@ import { fft2Image, free, ifft2Image, Tensor } from "./fft"
 import { RNG } from "../utils/Random"
 import { getContext, Logger } from "../utils/utils"
 
+interface AirglowOptions {
+  alpha: number
+  numWatermarks: number
+  secretKey: string
+}
+
 export const getMaxWatermarks = (original: HTMLImageElement | null, secret: HTMLImageElement | null): number => {
   if (original === null || secret === null) {
     return 0
@@ -59,47 +65,43 @@ const makeWatermark = (original: ImageData, secret: ImageData, rng: RNG, nWaterm
   return shuffledData
 }
 
-interface MixArguments {
-  alpha: number
-}
-
-const mix = (original: Tensor, secret: Tensor, args: MixArguments): Tensor => {
+const mix = (original: Tensor, secret: Tensor, args: AirglowOptions): Tensor => {
   return original.map((x, i) => {
       const t = new cv.Mat()
-      cv.addWeighted(secret[i], args.alpha, x, 1, 0, t)
+      cv.addWeighted(secret[i], args.alpha / 100, x, 1, 0, t)
       return t
     }
   ) as Tensor
 }
 
-const separate = (original: Tensor, encoded: Tensor, args: MixArguments): Tensor => {
+const separate = (original: Tensor, encoded: Tensor, args: AirglowOptions): Tensor => {
   return original.map((x, i) => {
     const t = new cv.Mat()
     cv.addWeighted(encoded[i], 1, x, -1, 0, t)
-    cv.addWeighted(t, args.alpha, t, 0, 0, t)
+    cv.addWeighted(t, args.alpha / 100, t, 0, 0, t)
     return t
   }) as Tensor
 }
 
 export const encode = async (
   original: ImageData, secret: ImageData,
-  secretKey: string, nWatermark: number, alpha: number,
-  logger: Logger
+  logger: Logger,
+  options: AirglowOptions
 ): Promise<ImageData> => {
   await logger(0, "Initializing")
-  secretKey = secretKey.trim()
+  const secretKey = options.secretKey.trim()
   if (secretKey === "") {
     throw new Error("Secret key cannot be empty")
   }
   await logger(5, "Making watermarks")
   const rng = new RNG(secretKey)
-  const watermark = makeWatermark(original, secret, rng, nWatermark)
+  const watermark = makeWatermark(original, secret, rng, options.numWatermarks)
   await logger(20, "Calculating the frequency domain of original image")
   const fftOriginal = await fft2Image(original)
   await logger(40, "Calculating the frequency domain of watermarks")
   const fftWatermark = await fft2Image(watermark)
   await logger(60, "Calculating the frequency domain of encoded image")
-  const fftEncoded = mix(fftOriginal, fftWatermark, { alpha })
+  const fftEncoded = mix(fftOriginal, fftWatermark, options)
   await logger(80, "Calculating the resulting image")
   const encoded = await ifft2Image(fftEncoded)
   await logger(100, "Finished!", "success")
@@ -135,11 +137,11 @@ export const getScaled = (encoded: HTMLImageElement, original: ImageData): Image
 
 export const decode = async (
   original: ImageData, encoded: HTMLImageElement,
-  secretKey: string, alpha: number,
-  logger: Logger
+  logger: Logger,
+  options: AirglowOptions
 ): Promise<ImageData> => {
   await logger(0, "Initializing")
-  secretKey = secretKey.trim()
+  const secretKey = options.secretKey.trim()
   if (secretKey === ""
   ) {
     throw new Error("Secret key cannot be empty")
@@ -151,7 +153,7 @@ export const decode = async (
   await logger(30, "Calculating the frequency domain of encoded image")
   const fftEncoded = await fft2Image(encodedScaled)
   await logger(45, "Calculating the frequency domain of watermarks")
-  const fftWatermark = separate(fftOriginal, fftEncoded, { alpha })
+  const fftWatermark = separate(fftOriginal, fftEncoded, options)
   await logger(60, "Calculating the watermarks image")
   const watermark = await ifft2Image(fftWatermark)
   await logger(80, "Calculating the resulting image")

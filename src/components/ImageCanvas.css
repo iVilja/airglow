@@ -21,3 +21,7 @@
 .airglow-file > .form-control[type="file"] {
   display: none;
 }
+
+.airglow-file > label {
+  z-index: 1;
+}

@@ -6,7 +6,10 @@ export const swap = (arr: number[] | Uint8ClampedArray, i: number, j: number): v
 
 export type AlertType = "primary" | "danger" | "success"
 
-export type Logger = (progress: number, status: string, alertType?: AlertType) => Promise<void>
+export type Logger = (
+  progress: number | null, status: string,
+  alertType?: AlertType, errorStack?: string
+) => Promise<void>
 
 export const getCurrentVersion = (): string => {
   const versionNumber = process.env.REACT_APP_VERSION || "0.0.0"
@@ -53,5 +56,8 @@ export const getContext = (canvas: HTMLCanvasElement): CanvasRenderingContext2D 
   }
   return ctx
 }
+export const getImageData = (
+  canvas: HTMLCanvasElement
+): ImageData => getContext(canvas).getImageData(0, 0, canvas.width, canvas.height)
 
 export const isDevelopment = process.env.NODE_ENV === "development"
