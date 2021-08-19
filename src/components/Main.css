@@ -1,0 +1,28 @@
+.airglow-main {
+  width: 90%;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.airglow-buttons {
+  display: flex;
+}
+
+.airglow-button {
+  display: block;
+  flex-grow: 1;
+  margin-left: .5rem;
+  margin-right: .5rem;
+}
+
+.airglow-button:last-child {
+  margin-right: 0;
+}
+
+.airglow-button:first-child {
+  margin-left: 0;
+}
+
+.airglow-help-text {
+  width: 100%;
+}
