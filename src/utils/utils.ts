@@ -1,15 +1,10 @@
+import { ImageDict } from "./types"
+
 export const swap = (arr: number[] | Uint8ClampedArray, i: number, j: number): void => {
   const t = arr[i]
   arr[i] = arr[j]
   arr[j] = t
 }
-
-export type AlertType = "primary" | "danger" | "success"
-
-export type Logger = (
-  progress: number | null, status: string,
-  alertType?: AlertType, errorStack?: string
-) => Promise<void>
 
 export const getCurrentVersion = (): string => {
   const versionNumber = process.env.REACT_APP_VERSION || "0.0.0"
@@ -61,3 +56,27 @@ export const getImageData = (
 ): ImageData => getContext(canvas).getImageData(0, 0, canvas.width, canvas.height)
 
 export const isDevelopment = process.env.NODE_ENV === "development"
+
+export function checkNulls<T>(
+  ss: ImageDict<T | null>
+): asserts ss is ImageDict<T> {
+  if (ss.secret === null || ss.original === null || ss.encoded === null) {
+    throw new Error("Check null failed")
+  }
+}
+
+// For test use only
+export const showImage = (data: cv.Mat) => {
+  const {width, height} = data.size()
+  const canvas = document.createElement("canvas")
+  canvas.id = "tmp"
+  canvas.width = width
+  canvas.height = height
+  document.body.appendChild(canvas)
+  cv.imshow("tmp", data)
+  const image = new Image(width, height)
+  image.src = canvas.toDataURL("image/png")
+  document.body.removeChild(canvas)
+  const w = window.open("about:blank", "__blank")
+  w?.document.body.appendChild(image)
+}

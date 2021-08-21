@@ -16,7 +16,7 @@ const fftOneChannel = (
   padded.convertTo(plane0, cv.CV_32F)
   const planes = new cv.MatVector()
   const complexI = new cv.Mat()
-  const plane1 = new cv.Mat.zeros(padded.rows, padded.cols, cv.CV_32F)
+  const plane1 = cv.Mat.zeros(padded.rows, padded.cols, cv.CV_32F)
   planes.push_back(plane0)
   planes.push_back(plane1)
   cv.merge(planes, complexI)
@@ -34,7 +34,7 @@ const ifftOneChannel = (
   src: cv.Mat
 ): cv.Mat => {
   const p = new cv.Mat()
-  cv.idft(src, p, cv.DFT_SCALE)
+  cv.dft(src, p, cv.DFT_SCALE | cv.DFT_INVERSE)
   const planes = new cv.MatVector()
   cv.split(p, planes)
   const result = planes.get(0)
@@ -43,18 +43,17 @@ const ifftOneChannel = (
 }
 
 export const fft2Image = async (
-  image: ImageData
+  image: cv.Mat
 ): Promise<Tensor> => {
-  const src = cv.matFromImageData(image)
   const channels = new cv.MatVector()
-  cv.split(src, channels)
+  cv.split(image, channels)
   const output = Array.from({ length: 3 }).map((_, i) => fftOneChannel(channels.get(i)))
   return output as Tensor
 }
 
 export const ifft2Image = async (
   input: Tensor
-): Promise<ImageData> => {
+): Promise<cv.Mat> => {
   const channels = new cv.MatVector()
   for (const ch of input) {
     const t = ifftOneChannel(ch)
@@ -66,9 +65,7 @@ export const ifft2Image = async (
   cv.merge(channels, output)
   output.convertTo(result, cv.CV_8UC4)
   cv.cvtColor(result, result, cv.COLOR_RGB2RGBA)
-  const imageData = new ImageData(new Uint8ClampedArray(result.data), result.cols, result.rows)
   channels.delete()
   output.delete()
-  result.delete()
-  return imageData
+  return result
 }

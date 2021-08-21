@@ -2,12 +2,12 @@ import "bootstrap/dist/css/bootstrap.min.css"
 
 import { useEffect, useMemo, useState } from "react"
 
-import { AlertType, getContext, getImageData, Logger } from "../utils/utils"
-import { clearCanvas, ImageCanvas } from "./ImageCanvas"
+import { AlertType, Canvases, Images, ImageType, Logger, OnClickEventHandler } from "../utils/types"
+import { ImageCanvas } from "./ImageCanvas"
 import { i18n } from "../utils/i18n"
 
 import "./Main.css"
-import { encode } from "../lib/airglow"
+import { decode, encode, getMaxWatermarks } from "../lib/airglow"
 
 const download = (canvas: HTMLCanvasElement, filename: string) => {
   const a = document.createElement("a")
@@ -19,32 +19,10 @@ const download = (canvas: HTMLCanvasElement, filename: string) => {
   document.body.removeChild(a)
 }
 
-const startEncode = async (
-  originalCanvas: HTMLCanvasElement | null,
-  secretCanvas: HTMLCanvasElement | null,
-  encodedCanvas: HTMLCanvasElement | null,
-  logger: Logger,
-  options: {
-    numWatermarks: number; secretKey: string; alpha: number
-  },
-) => {
-  if (originalCanvas === null || secretCanvas === null || encodedCanvas === null) {
-    return
-  }
-  await logger(0, "123")
-  clearCanvas(encodedCanvas)
-  try {
-    const original = getImageData(originalCanvas)
-    const secret = getImageData(secretCanvas)
-    const result = await encode(original, secret, logger, options)
-    encodedCanvas.width = result.width
-    encodedCanvas.height = result.height
-    getContext(encodedCanvas).putImageData(result, 0, 0)
-  } catch (e) {
-    const err = e as Error
-    await logger(null, err.message, "danger", err.stack)
-  }
+const canvases: Canvases = {
+  encoded: null, original: null, secret: null
 }
+const onCanvasSet = (key: ImageType) => (canvas: HTMLCanvasElement | null) => void (canvases[key] = canvas)
 
 let loggingResolve: ((v: void) => void) | null = null
 
@@ -80,23 +58,48 @@ export const Main = (): JSX.Element => {
       message: status
     })
   })
-  const [ secretCanvas, setSecretCanvas ] = useState<HTMLCanvasElement | null>(null)
-  const [ originalCanvas, setOriginalCanvas ] = useState<HTMLCanvasElement | null>(null)
-  const [ encodedCanvas, setEncodedCanvas ] = useState<HTMLCanvasElement | null>(null)
+  const [ images, setImages ] = useState<Images>({
+    encoded: null, original: null, secret: null
+  })
+  const onImageChange = (key: ImageType) => (image: HTMLImageElement | null) => void setImages({
+    ...images,
+    [key]: image
+  })
   const [ numWatermarks, setNumWatermarks ] = useState(1)
-  const [ maxWatermarks, setMaxWatermarks ] = useState(1)
   const [ secretKey, setSecretKey ] = useState("Airglow")
   const [ alpha, setAlpha ] = useState(5)
   const [ isWorking, toggleIsWorking ] = useState(false)
 
-  const canEncode = useMemo(() => secretCanvas !== null && originalCanvas !== null &&
-    numWatermarks <= maxWatermarks && secretKey.length > 0, [
-    secretCanvas, originalCanvas, numWatermarks, maxWatermarks, secretKey
+  const maxWatermarks = useMemo(() => getMaxWatermarks(images.original, images.secret), [
+    images
   ])
-  const canDecode = useMemo(() => encodedCanvas !== null && originalCanvas !== null &&
+  const canEncode = useMemo(() => images.secret !== null && images.original !== null &&
     numWatermarks <= maxWatermarks && secretKey.length > 0, [
-    encodedCanvas, originalCanvas, numWatermarks, maxWatermarks, secretKey
+    images, numWatermarks, maxWatermarks, secretKey
   ])
+  const canDecode = useMemo(() => images.encoded !== null && images.original !== null &&
+    secretKey.length > 0, [
+    images, secretKey
+  ])
+
+  const onStart = (isEncode: boolean): OnClickEventHandler<HTMLButtonElement> => async (e) => {
+    e.preventDefault()
+    if (isWorking || Object.keys(canvases).some((k) => canvases[k as ImageType] === null)) {
+      return
+    }
+    toggleIsWorking(true)
+    const options = {
+      numWatermarks, secretKey, alpha
+    }
+    try {
+      const result = await (isEncode ? encode : decode)(canvases, logger, options)
+      onImageChange(isEncode ? "encoded" : "secret")(result)
+    } catch (e) {
+      const err = e as Error
+      await logger(null, err.message, "danger", err.stack)
+    }
+    toggleIsWorking(false)
+  }
 
   return <div className="airglow-main container-fluid">
     <div className={ "alert alert-dismissible fade show" + (status.type !== null ? ` alert-${ status.type }` : "") }
@@ -116,7 +119,9 @@ export const Main = (): JSX.Element => {
       <div className="row">
         <div className="col-12 col-lg-4">
           <ImageCanvas
-            name="Secret Image" onImageChanged={ setSecretCanvas } disabled={ isWorking }
+            name="Secret Image" disabled={ isWorking }
+            onCanvasSet={ onCanvasSet("secret") }
+            onImageChanged={ onImageChange("secret") }
           />
           <div className="input-group mb-3">
             <span className="input-group-text">{ i18n("Number of Watermarks") }</span>
@@ -127,11 +132,22 @@ export const Main = (): JSX.Element => {
               max={ maxWatermarks }
               value={ numWatermarks }
               disabled={ isWorking }
-              onChange={ (e) => void setNumWatermarks(parseInt(e.target.value)) } />
+              onChange={ (e) => {
+                let n = parseInt(e.target.value)
+                if (Number.isNaN(n)) {
+                  return
+                }
+                n = n > maxWatermarks ? maxWatermarks : n < 1 ? 1 : n
+                setNumWatermarks(n)
+              } } />
           </div>
         </div>
         <div className="col-12 col-lg-4">
-          <ImageCanvas name="Original Image" onImageChanged={ setOriginalCanvas } disabled={ isWorking } />
+          <ImageCanvas
+            name="Original Image" disabled={ isWorking }
+            onCanvasSet={ onCanvasSet("original") }
+            onImageChanged={ onImageChange("original") }
+          />
           <div className="input-group mb-3">
             <span className="input-group-text">{ i18n("Secret Key") }</span>
             <input
@@ -145,14 +161,19 @@ export const Main = (): JSX.Element => {
           </div>
         </div>
         <div className="col-12 col-lg-4">
-          <ImageCanvas name="Encoded Image" onImageChanged={ setEncodedCanvas } disabled={ isWorking } />
+          <ImageCanvas
+            name="Encoded Image" disabled={ isWorking }
+            onCanvasSet={ onCanvasSet("encoded") }
+            onImageChanged={ onImageChange("encoded") }
+          />
           <div className="airglow-buttons input-group mb-3">
             <button className="airglow-button btn btn-primary" onClick={ (e) => {
               e.preventDefault()
-              if (encodedCanvas !== null) {
-                download(encodedCanvas, "encoded.png")
+              const encoded = canvases.encoded
+              if (encoded !== null) {
+                download(encoded, "encoded.png")
               }
-            } } disabled={ encodedCanvas === null }
+            } } disabled={ canvases.encoded === null }
             >{ i18n("Download") }</button>
           </div>
         </div>
@@ -161,41 +182,23 @@ export const Main = (): JSX.Element => {
         <div className="col-12 col-lg-4">
           <div className="input-group mb-3">
             <label htmlFor="inputAlpha" className="form-label">
-              { i18n("Alpha") }: { (alpha / 100) }
+              { i18n("Alpha") }: { (alpha) }
             </label>
-            <input type="range" className="form-range" min="1" max="100" id="inputAlpha" value={ alpha }
+            <input type="range" className="form-range" min="1" max="100" id="inputAlpha" value={ alpha * 100 }
                    disabled={ isWorking }
-                   onChange={ (e) => void setAlpha(parseInt(e.target.value)) } />
+                   onChange={ (e) => void setAlpha(parseInt(e.target.value) / 100) } />
           </div>
         </div>
         <div className="col-12 col-lg-4">
           <div className="airglow-buttons input-group mt-3">
             <button
               className="airglow-button btn btn-primary" disabled={ isWorking || !canEncode }
-              onClick={ async (e) => {
-                e.preventDefault()
-                if (isWorking) {
-                  return
-                }
-                toggleIsWorking(true)
-                await startEncode(
-                  originalCanvas, secretCanvas, encodedCanvas,
-                  logger, { secretKey, numWatermarks, alpha }
-                )
-                toggleIsWorking(false)
-              } }
+              onClick={ onStart(true) }
             >Encode!
             </button>
             <button
               className="airglow-button btn btn-primary" disabled={ isWorking || !canDecode }
-              onClick={ (e) => {
-                e.preventDefault()
-                if (isWorking) {
-                  return
-                }
-                toggleIsWorking(true)
-                toggleIsWorking(false)
-              } }
+              onClick={ onStart(false) }
             >Decode!
             </button>
           </div>
@@ -203,8 +206,10 @@ export const Main = (): JSX.Element => {
         <div className="col-12 col-lg-4">
           <div className="airglow-buttons input-group mt-3">
             <a className="airglow-button btn btn-primary"
-               href="https://github.com/ryukina/airglow" target="_blank">
-              { i18n("Docs") }
+               href="https://github.com/ryukina/airglow"
+               target="_blank"
+               rel="noreferrer"
+            >{ i18n("Docs") }
             </a>
           </div>
         </div>

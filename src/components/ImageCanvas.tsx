@@ -5,25 +5,28 @@ import { getContext } from "../utils/utils"
 import "./ImageCanvas.css"
 import { i18n } from "../utils/i18n"
 
-export const clearCanvas = (canvas: HTMLCanvasElement | null) => {
-  if (canvas === null) {
-    return
-  }
-  canvas.width = 10
-  canvas.height = 10
-  const ctx = getContext(canvas)
-  ctx.clearRect(0, 0, 10, 10)
-}
 
 export const ImageCanvas = (props: {
   name: string,
-  onImageChanged: (canvas: HTMLCanvasElement | null) => void,
+  onImageChanged: (image: HTMLImageElement | null) => void,
+  onCanvasSet: (canvas: HTMLCanvasElement | null) => void,
   disabled: boolean
 }) => {
   const [ image, setImage ] = useState<null | HTMLImageElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
+  const clearCanvas = (canvas: HTMLCanvasElement | null) => {
+    if (canvas === null) {
+      return
+    }
+    canvas.width = 10
+    canvas.height = 10
+    const ctx = getContext(canvas)
+    ctx.clearRect(0, 0, 10, 10)
+    setImage(null)
+  }
 
-  useEffect(() => props.onImageChanged(canvasRef.current))
+  const { onCanvasSet } = props
+  useEffect(() => onCanvasSet(canvasRef.current), [ onCanvasSet, canvasRef ])
   const onImageChanged = async (e: ChangeEvent<HTMLInputElement>) => {
     const canvas = canvasRef.current
     if (canvas === null) {
@@ -44,8 +47,7 @@ export const ImageCanvas = (props: {
       const ctx = getContext(canvas)
       ctx.drawImage(image, 0, 0)
       setImage(image)
-      props.onImageChanged(canvas)
-      return
+      props.onImageChanged(image)
     }
     reader.onloadend = () => {
       if (reader.result !== null) {
@@ -55,15 +57,16 @@ export const ImageCanvas = (props: {
     reader.readAsDataURL(file)
     e.target.value = ""
   }
-  const id = `file-${ props.name.split(/\s/).join("-") }`
+  const id = props.name.split(/\s/).join("-")
+  const fileID = `file-${ id }`
   const fileRef = useRef<HTMLInputElement | null>(null)
   return <div className="airglow-image-canvas input-group">
     <div className="airglow-canvas-container mb-3">
-      <canvas className="airglow-canvas" width={ 10 } height={ 10 } ref={ canvasRef } />
+      <canvas className="airglow-canvas" width={ 10 } height={ 10 } ref={ canvasRef } id={ `canvas-${ id }` } />
     </div>
     <div className="airglow-file input-group mb-3">
       <span className="input-group-text">{ i18n(props.name) }</span>
-      <input id={ id }
+      <input id={ fileID }
              type="file" className="form-control"
              onChange={ onImageChanged }
              ref={ fileRef }
@@ -77,7 +80,7 @@ export const ImageCanvas = (props: {
       } }>{
         image === null ? "" : `${ image.width }*${ image.height }`
       }</div>
-      <label className="input-group-text" htmlFor={ id }>{ i18n("Browse") }</label>
+      <label className="input-group-text" htmlFor={ fileID }>{ i18n("Browse") }</label>
     </div>
   </div>
 }
