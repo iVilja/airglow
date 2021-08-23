@@ -20,8 +20,9 @@
   "scripts": {
     "start": "react-scripts start",
     "build": "react-scripts build",
-    "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "ci-deploy": "./scripts/ci-prepare.sh && ./scripts/ci-deploy.sh",
+    "ci-release-deploy": "./scripts/ci-prepare.sh && ./scripts/ci-deploy.sh --release"
   },
   "eslintConfig": {
     "extends": [
