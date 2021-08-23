@@ -65,17 +65,23 @@ export function checkNulls<T>(
   }
 }
 
-// For test use only
-export const showImage = (data: cv.Mat) => {
-  const {width, height} = data.size()
-  const canvas = document.createElement("canvas")
-  canvas.id = "tmp"
+export const showImage = (canvas: HTMLCanvasElement, result: cv.Mat): HTMLImageElement => {
+  const { width, height } = result.size()
   canvas.width = width
   canvas.height = height
-  document.body.appendChild(canvas)
-  cv.imshow("tmp", data)
+  cv.imshow(canvas.id, result)
+  result.delete()
   const image = new Image(width, height)
   image.src = canvas.toDataURL("image/png")
+  return image
+}
+
+// For test use only
+export const showImageTest = (data: cv.Mat) => {
+  const canvas = document.createElement("canvas")
+  canvas.id = "tmp"
+  document.body.appendChild(canvas)
+  const image = showImage(canvas, data)
   document.body.removeChild(canvas)
   const w = window.open("about:blank", "__blank")
   w?.document.body.appendChild(image)

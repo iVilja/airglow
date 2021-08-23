@@ -54,20 +54,20 @@ export const Main = (): JSX.Element => {
       setProgress(progress)
     }
     setStatus({
-      type: alertType === undefined ? null : alertType,
+      type: alertType === undefined ? "primary" : alertType,
       message: status
     })
   })
   const [ images, setImages ] = useState<Images>({
     encoded: null, original: null, secret: null
   })
-  const onImageChange = (key: ImageType) => (image: HTMLImageElement | null) => void setImages({
+  const onImageChange = (key: ImageType) => (image: HTMLImageElement | null) => setImages({
     ...images,
     [key]: image
   })
   const [ numWatermarks, setNumWatermarks ] = useState(1)
   const [ secretKey, setSecretKey ] = useState("Airglow")
-  const [ alpha, setAlpha ] = useState(5)
+  const [ alpha, setAlpha ] = useState(0.05)
   const [ isWorking, toggleIsWorking ] = useState(false)
 
   const maxWatermarks = useMemo(() => getMaxWatermarks(images.original, images.secret), [
@@ -122,6 +122,7 @@ export const Main = (): JSX.Element => {
             name="Secret Image" disabled={ isWorking }
             onCanvasSet={ onCanvasSet("secret") }
             onImageChanged={ onImageChange("secret") }
+            disallowTransparency={ true }
           />
           <div className="input-group mb-3">
             <span className="input-group-text">{ i18n("Number of Watermarks") }</span>
@@ -173,7 +174,7 @@ export const Main = (): JSX.Element => {
               if (encoded !== null) {
                 download(encoded, "encoded.png")
               }
-            } } disabled={ canvases.encoded === null }
+            } } disabled={ images.encoded === null }
             >{ i18n("Download") }</button>
           </div>
         </div>

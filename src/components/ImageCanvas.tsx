@@ -10,7 +10,8 @@ export const ImageCanvas = (props: {
   name: string,
   onImageChanged: (image: HTMLImageElement | null) => void,
   onCanvasSet: (canvas: HTMLCanvasElement | null) => void,
-  disabled: boolean
+  disabled: boolean,
+  disallowTransparency?: boolean
 }) => {
   const [ image, setImage ] = useState<null | HTMLImageElement>(null)
   const canvasRef = useRef<HTMLCanvasElement | null>(null)
@@ -23,6 +24,7 @@ export const ImageCanvas = (props: {
     const ctx = getContext(canvas)
     ctx.clearRect(0, 0, 10, 10)
     setImage(null)
+    props.onImageChanged(null)
   }
 
   const { onCanvasSet } = props
@@ -42,9 +44,15 @@ export const ImageCanvas = (props: {
     const image = new Image()
     const reader = new FileReader()
     image.onload = () => {
-      canvas.width = image.width
-      canvas.height = image.height
+      const { width, height } = image
+      canvas.width = width
+      canvas.height = height
       const ctx = getContext(canvas)
+      if (props.disallowTransparency) {
+        ctx.beginPath()
+        ctx.fillStyle = "black"
+        ctx.fillRect(0, 0, width, height)
+      }
       ctx.drawImage(image, 0, 0)
       setImage(image)
       props.onImageChanged(image)
@@ -65,7 +73,7 @@ export const ImageCanvas = (props: {
       <canvas className="airglow-canvas" width={ 10 } height={ 10 } ref={ canvasRef } id={ `canvas-${ id }` } />
     </div>
     <div className="airglow-file input-group mb-3">
-      <span className="input-group-text">{ i18n(props.name) }</span>
+      <label className="input-group-text" htmlFor={ fileID }>{ i18n(props.name) }</label>
       <input id={ fileID }
              type="file" className="form-control"
              onChange={ onImageChanged }
@@ -80,7 +88,10 @@ export const ImageCanvas = (props: {
       } }>{
         image === null ? "" : `${ image.width }*${ image.height }`
       }</div>
-      <label className="input-group-text" htmlFor={ fileID }>{ i18n("Browse") }</label>
+      <button className="input-group-text" onClick={ (e) => {
+        e.preventDefault()
+        clearCanvas(canvasRef.current)
+      } }>{ i18n("Clear") }</button>
     </div>
   </div>
 }

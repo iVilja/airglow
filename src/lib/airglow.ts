@@ -10,17 +10,6 @@ interface AirglowOptions {
   secretKey: string
 }
 
-const showResult = (canvas: HTMLCanvasElement, result: cv.Mat): HTMLImageElement => {
-  const { width, height } = result.size()
-  canvas.width = width
-  canvas.height = height
-  cv.imshow(canvas.id, result)
-  result.delete()
-  const image = new Image(width, height)
-  image.src = canvas.toDataURL("image/png")
-  return image
-}
-
 export const getMaxWatermarks = (original: HTMLImageElement | null, secret: HTMLImageElement | null): number => {
   if (original === null || secret === null) {
     return 0
@@ -88,7 +77,6 @@ const makeWatermark = (
   const ksize = new cv.Size(3, 3)
   cv.GaussianBlur(secret, processed, ksize, 0, 0)
   putWatermarks(data, original, processed, nWatermarks)
-  showImage(data)
   const shuffled = shuffleWatermark(data, rng)
   processed.delete()
   data.delete()
@@ -108,7 +96,7 @@ const separate = (original: Tensor, encoded: Tensor, args: AirglowOptions): Tens
   return original.map((x, i) => {
     const t = new cv.Mat()
     cv.addWeighted(encoded[i], 1, x, -1, 0, t)
-    cv.addWeighted(t, args.alpha, t, 0, 0, t)
+    cv.addWeighted(t, 1 / args.alpha, t, 0, 0, t)
     return t
   }) as Tensor
 }
@@ -137,7 +125,7 @@ export const encode = async (
   const fftEncoded = mix(fftOriginal, fftWatermark, options)
   await logger(80, "Calculating the resulting image")
   const encoded = await ifft2Image(fftEncoded)
-  const result = showResult(canvases.encoded, encoded)
+  const result = showImage(canvases.encoded, encoded)
   await logger(100, "Finished!", "success")
   watermark.delete()
   free(fftOriginal)
@@ -192,7 +180,7 @@ export const decode = async (
   await logger(80, "Calculating the resulting image")
   const rng = new RNG(secretKey)
   const decoded = decodeWatermark(watermark, rng)
-  const result = showResult(canvases.secret, decoded)
+  const result = showImage(canvases.secret, decoded)
   await logger(100, "Finished!", "success")
   free(fftOriginal)
   free(fftWatermark)
